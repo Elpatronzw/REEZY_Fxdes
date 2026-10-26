@@ -11,6 +11,7 @@ const SERVICES = [
   { name: "Beard Trim", desc: "Shape, line and tidy.", price: null },
   { name: "Line-up / Shape-up", desc: "Sharp edges around the hairline.", price: null },
   { name: "Kids Cut", desc: "For under 12s.", price: null },
+  { name: "Women's Cut", desc: "Cuts, fades and shaping for women.", price: null },
 ];
 
 const CURRENCY = "$";
