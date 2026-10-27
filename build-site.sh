@@ -4,7 +4,7 @@
 cd "$(dirname "$0")"
 SRC=demo/reezy-demo.html
 SITE="https://elpatronzw.github.io/REEZY_Fxdes/"
-DESC="Book your cut at Reezy Fxdes / VIP Classic Barbershop. Open 8am till late. Pick a free time and confirm on WhatsApp."
+DESC="Book your cut at Reezy Fxdes / VIP Classic Barbershop. Open daily 6:30am – 10:30pm in Senga, KMP Bluetuckshops. Pick a free time and confirm on WhatsApp."
 {
   printf '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
   printf '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'

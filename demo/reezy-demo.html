@@ -179,6 +179,10 @@ p { margin: 0; }
 .hours { list-style: none; margin: 0; padding: 0; }
 .hours li { display: flex; justify-content: space-between; padding: 0.45rem 0; border-bottom: 1px solid var(--line); font-size: 0.95rem; }
 .number { font-family: var(--display); font-size: 2rem; letter-spacing: 0.06em; user-select: all; }
+.contact-row + .contact-row { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+.contact-row .label { font-size: 0.7rem; margin-bottom: 0.2rem; }
+.contact-row .number { margin: 0; }
+.contact-row p:last-child { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.25rem; }
 .copy { background: none; border: 1px solid var(--line); color: var(--grey); padding: 0.35rem 0.8rem; font: 600 0.7rem var(--body); text-transform: uppercase; letter-spacing: 0.15em; cursor: pointer; }
 .copy:hover { color: var(--white); border-color: var(--white); }
 
@@ -346,10 +350,21 @@ p { margin: 0; }
       </div>
       <div class="card">
         <h3>Contact</h3>
-        <p class="number" id="number">+263 71 951 5630</p>
-        <p><button type="button" class="copy" id="copy">Copy number</button></p>
-        <p><a href="https://wa.me/263719515630" target="_blank" rel="noopener">Chat on WhatsApp</a></p>
-        <p class="muted">Address: to be added</p>
+        <div class="contact-row">
+          <p class="label muted">Main · WhatsApp bookings</p>
+          <p class="number" id="number-main">+263 71 951 5630</p>
+          <p><button type="button" class="copy" data-copy="+263719515630" data-target="number-main">Copy number</button>
+             <a class="wa-link" href="https://wa.me/263719515630" target="_blank" rel="noopener">Chat on WhatsApp</a></p>
+        </div>
+        <div class="contact-row">
+          <p class="label muted">Secondary</p>
+          <p class="number" id="number-alt">+263 78 280 7245</p>
+          <p><button type="button" class="copy" data-copy="+263782807245" data-target="number-alt">Copy number</button></p>
+        </div>
+        <div class="contact-row">
+          <p class="label muted">Address</p>
+          <p>Senga, KMP Bluetuckshops</p>
+        </div>
       </div>
     </div>
   </section>
@@ -381,8 +396,9 @@ const SERVICES = [
   { group: "Ladies", name: "Ladies + Curls + Tint", price: 15 },
 ];
 const CURRENCY = "$";
-const OPEN_LATE = { open: "08:00", close: "22:00", label: "8am – Late" };
-const HOURS = { 0: OPEN_LATE, 1: OPEN_LATE, 2: OPEN_LATE, 3: OPEN_LATE, 4: OPEN_LATE, 5: OPEN_LATE, 6: OPEN_LATE };
+// Open every day 6:30am – 10:30pm. Last booking slot starts at 10:00pm so it ends by closing.
+const OPEN = { open: "06:30", close: "22:30", label: "6:30 AM – 10:30 PM" };
+const HOURS = { 0: OPEN, 1: OPEN, 2: OPEN, 3: OPEN, 4: OPEN, 5: OPEN, 6: OPEN };
 const SLOT_MINUTES = 30;
 const DAYS_AHEAD = 14;
 // ==== End of settings ====
@@ -571,19 +587,19 @@ function saveBooking(b) {
   store.doc(key).set({ ...b, createdAt: new Date().toISOString() }).catch(() => { canWrite = false; });
 }
 
-// Copy number
-$("copy").addEventListener("click", () => {
-  const btn = $("copy");
-  const done = (t) => { btn.textContent = t; setTimeout(() => (btn.textContent = "Copy number"), 1800); };
-  try {
-    navigator.clipboard.writeText("+263719515630").then(() => done("Copied"), () => { selectNumber(); done("Press Ctrl+C"); });
-  } catch { selectNumber(); done("Press Ctrl+C"); }
+// Copy number buttons
+document.querySelectorAll(".copy").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const done = (t) => { btn.textContent = t; setTimeout(() => (btn.textContent = "Copy number"), 1800); };
+    const select = () => {
+      const r = document.createRange();
+      r.selectNodeContents($(btn.dataset.target));
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      done("Press Ctrl+C");
+    };
+    try { navigator.clipboard.writeText(btn.dataset.copy).then(() => done("Copied"), select); } catch { select(); }
+  });
 });
-function selectNumber() {
-  const r = document.createRange();
-  r.selectNodeContents($("number"));
-  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
-}
 
 // Mobile menu
 $("nav-toggle").addEventListener("click", () => {
