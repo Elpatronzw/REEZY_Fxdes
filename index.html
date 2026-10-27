@@ -124,13 +124,23 @@ p { margin: 0; }
 .band--white .muted { color: var(--grey-dark); }
 
 /* Services */
-.services { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); border-top: 1px solid var(--line); }
-.service { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: 1.6rem 0; border-bottom: 1px solid var(--line); min-width: 0; }
-.service:nth-child(odd) { padding-right: 2rem; border-right: 1px solid var(--line); }
-.service:nth-child(even) { padding-left: 2rem; }
-.service:last-child:nth-child(odd) { grid-column: 1 / -1; border-right: 0; }
-.service p { font-size: 0.9rem; margin-top: 0.3rem; }
-.service__price { font-family: var(--display); font-size: 1.8rem; white-space: nowrap; }
+.price-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
+.price-group { border: 1px solid var(--line); padding: 0.75rem 1.5rem 0.5rem; min-width: 0; }
+.price-group__title {
+  font-size: 1.5rem; letter-spacing: 0.2em; text-align: center;
+  background: var(--white); color: var(--black); padding: 0.45rem 1rem 0.3rem; margin: 0 -0.75rem 0.5rem;
+}
+.services { list-style: none; margin: 0; padding: 0; }
+.service { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--line); min-width: 0; }
+.service:last-child { border-bottom: 0; }
+.service__name { font-size: 1.05rem; }
+.service__price { font-family: var(--display); font-size: 1.9rem; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.notice { margin-top: 2rem; border: 1px solid var(--line); padding: 1.5rem; }
+.notice h3 { font-size: 1.5rem; letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+.notice ul { margin: 0; padding-left: 1.2rem; color: var(--grey); display: grid; gap: 0.35rem; }
+.non-neg { margin-top: 1.5rem; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1rem; background: var(--white); color: var(--black); padding: 1rem 1.5rem; }
+.non-neg strong { font-family: var(--display); font-weight: 400; font-size: 1.5rem; letter-spacing: 0.08em; }
+.non-neg span { color: var(--grey-dark); font-size: 0.9rem; align-self: center; }
 
 /* Booking */
 .book { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem 2rem; }
@@ -216,9 +226,9 @@ p { margin: 0; }
   .hero__actions { justify-content: center; }
 
   .section { padding-block: 4rem; }
-  .services { grid-template-columns: 1fr; }
-  .service:nth-child(odd), .service:nth-child(even) { padding: 1.4rem 0; border-right: 0; }
-  .book, .visit { grid-template-columns: 1fr; }
+  .price-groups, .book, .visit { grid-template-columns: 1fr; }
+  .price-group { padding: 0.75rem 1rem 0.25rem; }
+  .price-group__title { margin: 0 -0.25rem 0.5rem; }
   .card, .done { padding: 1.5rem; }
 }
 </style>
@@ -233,7 +243,7 @@ p { margin: 0; }
     </a>
     <button class="nav__toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
     <nav class="nav__links" id="nav-links">
-      <a href="#services">Services</a>
+      <a href="#services">Prices</a>
       <a href="#book">Book</a>
       <a href="#visit">Visit</a>
       <a href="#book" class="btn btn--small">Book now</a>
@@ -250,7 +260,7 @@ p { margin: 0; }
       <p class="hero__tag">Clean fades. Sharp lines. Fresh every time.</p>
       <div class="hero__actions">
         <a href="#book" class="btn">Book a cut</a>
-        <a href="#services" class="btn btn--ghost">View services</a>
+        <a href="#services" class="btn btn--ghost">View prices</a>
       </div>
     </div>
     <div class="hero__logo"><img src="assets/logo.jpeg" alt="Reezy Fxdes logo: a crowned portrait with a fade, framed by stars"></div>
@@ -259,9 +269,19 @@ p { margin: 0; }
   <section id="services" class="wrap section">
     <div class="section__head">
       <p class="eyebrow">What we do</p>
-      <h2>Services</h2>
+      <h2>Price list</h2>
     </div>
-    <ul class="services" id="services-list"></ul>
+    <div class="price-groups" id="services-list"></div>
+    <div class="notice">
+      <h3>Priority service notice</h3>
+      <ul>
+        <li>Clients who have booked in advance will be served first.</li>
+        <li>Walk-ins will be served in order of the queue.</li>
+        <li>Dye must be washed and shampooed at the barbershop to avoid hair loss.</li>
+        <li>Refreshments are given to VVIP clients.</li>
+      </ul>
+    </div>
+    <p class="non-neg"><strong>Prices are non-negotiable</strong><span>Effective 20 October. Be guided accordingly.</span></p>
   </section>
 
   <section id="book" class="band--white">
@@ -300,7 +320,7 @@ p { margin: 0; }
         </div>
         <div class="field full">
           <label class="label" for="notes">Notes (optional)</label>
-          <textarea id="notes" name="notes" rows="3" placeholder="Style reference, beard, kids cut..."></textarea>
+          <textarea id="notes" name="notes" rows="3" placeholder="Style reference, dye colour..."></textarea>
         </div>
 
         <div class="full summary">
@@ -364,14 +384,15 @@ p { margin: 0; }
 // ==== Shop settings ====
 const WHATSAPP_NUMBER = "263719515630";
 const SHOP_NAME = "Reezy Fxdes / VIP Classic Barbershop";
+// Prices from the shop's price list (effective 20 October)
 const SERVICES = [
-  { name: "Haircut", desc: "Classic cut, styled to finish.", price: null },
-  { name: "Fade", desc: "Low, mid, high or skin fade.", price: null },
-  { name: "Fade + Beard", desc: "Fade with beard shape-up and line.", price: null },
-  { name: "Beard Trim", desc: "Shape, line and tidy.", price: null },
-  { name: "Line-up / Shape-up", desc: "Sharp edges around the hairline.", price: null },
-  { name: "Kids Cut", desc: "For under 12s.", price: null },
-  { name: "Women's Cut", desc: "Cuts, fades and shaping for women.", price: null },
+  { group: "Gents", name: "Fade", price: 5 },
+  { group: "Gents", name: "Fade + Dye", price: 8 },
+  { group: "Gents", name: "Fade + Dye + Shampoo & Enhancements", price: 10 },
+  { group: "Gents", name: "Line Up", price: 2 },
+  { group: "Ladies", name: "Ladies", price: 5 },
+  { group: "Ladies", name: "Ladies Cut + Dye / Tint / Bleach", price: 10 },
+  { group: "Ladies", name: "Ladies + Curls + Tint", price: 15 },
 ];
 const CURRENCY = "$";
 const OPEN_LATE = { open: "08:00", close: "22:00", label: "8am – Late" };
@@ -397,16 +418,21 @@ const booked = new Map();          // slotKey -> booking doc
 let store = null;                  // db collection, when the viewer has it
 let canWrite = false;
 
-// Services + select
-SERVICES.forEach((s) => {
-  const li = document.createElement("li");
-  li.className = "service";
-  li.innerHTML = `<div><h3>${esc(s.name)}</h3><p class="muted">${esc(s.desc)}</p></div><span class="service__price">${formatPrice(s.price)}</span>`;
-  $("services-list").appendChild(li);
-  const opt = document.createElement("option");
-  opt.value = s.name;
-  opt.textContent = s.price == null ? s.name : `${s.name} (${formatPrice(s.price)})`;
-  $("service").appendChild(opt);
+// Price list + service dropdown, grouped (Gents, Ladies)
+const serviceLabel = (s) => (s.price == null ? s.name : `${s.name} (${formatPrice(s.price)})`);
+[...new Set(SERVICES.map((s) => s.group))].forEach((group) => {
+  const items = SERVICES.filter((s) => s.group === group);
+  const box = document.createElement("div");
+  box.className = "price-group";
+  box.innerHTML = `<h3 class="price-group__title">${esc(group)}</h3><ul class="services">${items
+    .map((s) => `<li class="service"><span class="service__name">${esc(s.name)}</span><span class="service__price">${formatPrice(s.price)}</span></li>`)
+    .join("")}</ul>`;
+  $("services-list").appendChild(box);
+
+  const og = document.createElement("optgroup");
+  og.label = group;
+  items.forEach((s) => og.appendChild(new Option(serviceLabel(s), serviceLabel(s))));
+  $("service").appendChild(og);
 });
 
 // Hours
