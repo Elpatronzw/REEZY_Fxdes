@@ -1,138 +1,655 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Reezy Fxdes / VIP Classic Barbershop</title>
-  <meta name="description" content="Reezy Fxdes barbershop. Book your cut online and confirm on WhatsApp.">
-  <link rel="icon" href="assets/logo.jpeg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Book your cut at Reezy Fxdes / VIP Classic Barbershop. Open 8am till late. Pick a free time and confirm on WhatsApp.">
+<meta property="og:title" content="Reezy Fxdes / VIP Classic Barbershop">
+<meta property="og:description" content="Book your cut at Reezy Fxdes / VIP Classic Barbershop. Open 8am till late. Pick a free time and confirm on WhatsApp.">
+<meta property="og:image" content="https://elpatronzw.github.io/REEZY_Fxdes/assets/logo.jpeg">
+<meta property="og:url" content="https://elpatronzw.github.io/REEZY_Fxdes/">
+<meta property="og:type" content="website">
+<link rel="icon" href="assets/logo.jpeg">
+<title>Reezy Fxdes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: one column of full-width bands (black, white booking band, black), content capped at 1100px.
+   Single deliberate black-and-white look, so no light/dark switching. */
+:root {
+  --black: #0a0a0a;
+  --ink: #141414;
+  --white: #ffffff;
+  --grey: #8f8f8f;
+  --grey-dark: #6b6b6b;
+  --line: #262626;
+  --line-light: #d9d9d9;
+  --error: #b00020;
+  --display: "Bebas Neue", Impact, "Arial Narrow", sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --max: 1100px;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+body {
+  background: var(--black);
+  color: var(--white);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 0;
+}
+body::before {
+  content: ""; position: fixed; inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--black);
+}
+img { display: block; max-width: 100%; }
+a { color: inherit; }
+h1, h2, h3 { font-family: var(--display); font-weight: 400; letter-spacing: 0.04em; line-height: 1; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(4rem, 12vw, 8rem); }
+h2 { font-size: clamp(2.5rem, 6vw, 4rem); }
+h3 { font-size: 1.6rem; }
+p { margin: 0; }
+
+.wrap {
+  max-width: calc(var(--max) + 2 * 40px);
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+@media (min-width: 760px) {
+  .wrap { padding-left: max(40px, env(safe-area-inset-left, 0px)); padding-right: max(40px, env(safe-area-inset-right, 0px)); }
+}
+
+.eyebrow { text-transform: uppercase; letter-spacing: 0.3em; font-size: 0.75rem; color: var(--grey); margin-bottom: 0.75rem; }
+.muted { color: var(--grey); }
+
+/* Buttons */
+.btn {
+  display: inline-block; text-align: center;
+  padding: 0.9rem 1.8rem;
+  border: 1px solid var(--white); background: var(--white); color: var(--black);
+  font: 600 0.85rem var(--body); text-transform: uppercase; letter-spacing: 0.15em;
+  text-decoration: none; cursor: pointer; transition: background .2s, color .2s;
+}
+.btn:hover { background: transparent; color: var(--white); }
+.btn:focus-visible, button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid currentColor; outline-offset: 3px;
+}
+.btn--ghost { background: transparent; color: var(--white); }
+.btn--ghost:hover { background: var(--white); color: var(--black); }
+.btn--small { padding: 0.55rem 1.1rem; font-size: 0.75rem; }
+.btn--dark { background: var(--black); color: var(--white); border-color: var(--black); }
+.btn--dark:hover { background: transparent; color: var(--black); }
+.btn[aria-disabled="true"] { opacity: 0.45; }
+
+/* Nav */
+.nav {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10;
+  background: rgba(10,10,10,0.94); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.nav__inner { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 0.8rem; position: relative; }
+.nav__brand { display: flex; align-items: center; gap: 0.7rem; font-family: var(--display); font-size: 1.6rem; letter-spacing: 0.06em; text-decoration: none; min-width: 0; }
+.nav__sub { color: var(--grey); font-size: 1.1rem; }
+.nav__logo { width: 40px; height: 40px; flex: none; border-radius: 50%; object-fit: cover; object-position: 50% 35%; background: var(--white); }
+.nav__links { display: flex; align-items: center; gap: 2rem; }
+.nav__links a:not(.btn) { text-decoration: none; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.15em; color: var(--grey); }
+.nav__links a:not(.btn):hover { color: var(--white); }
+.nav__toggle { display: none; background: none; border: 0; cursor: pointer; padding: 0.5rem; color: var(--white); }
+.nav__toggle span { display: block; width: 24px; height: 2px; background: currentColor; margin: 5px 0; }
+
+/* Hero */
+.hero { display: grid; grid-template-columns: 1.1fr 1fr; align-items: center; gap: 3rem; padding-block: 5rem; }
+.hero__sub { font-family: var(--display); font-size: clamp(1.6rem, 4vw, 2.4rem); letter-spacing: 0.08em; color: var(--grey); margin-top: 0.75rem; }
+.hero__tag { font-size: 1.1rem; color: var(--grey); margin: 1.5rem 0 2rem; max-width: 26rem; }
+.hero__actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+.hero__logo {
+  background: var(--white); aspect-ratio: 640 / 562; max-width: 100%; overflow: hidden;
+  outline: 1px solid var(--line); outline-offset: 12px;
+}
+.hero__logo img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+
+/* Sections */
+.section { padding-block: 5.5rem; }
+.section__head { margin-bottom: 3rem; max-width: 40rem; }
+.section__head .muted { margin-top: 1rem; }
+.band--white { background: var(--white); color: var(--black); }
+.band--white .muted { color: var(--grey-dark); }
+
+/* Services */
+.services { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); border-top: 1px solid var(--line); }
+.service { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: 1.6rem 0; border-bottom: 1px solid var(--line); min-width: 0; }
+.service:nth-child(odd) { padding-right: 2rem; border-right: 1px solid var(--line); }
+.service:nth-child(even) { padding-left: 2rem; }
+.service:last-child:nth-child(odd) { grid-column: 1 / -1; border-right: 0; }
+.service p { font-size: 0.9rem; margin-top: 0.3rem; }
+.service__price { font-family: var(--display); font-size: 1.8rem; white-space: nowrap; }
+
+/* Booking */
+.book { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem 2rem; }
+.full { grid-column: 1 / -1; }
+.field { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+.label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.15em; font-weight: 600; }
+.field input, .field select, .field textarea {
+  font: 1rem var(--body); padding: 0.85rem 1rem;
+  border: 1px solid var(--black); border-radius: 0;
+  background: var(--white); color: var(--black); width: 100%;
+  color-scheme: light;
+}
+
+.days { display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem; scrollbar-width: thin; }
+.day {
+  flex: none; width: 4.4rem; padding: 0.6rem 0.3rem;
+  display: flex; flex-direction: column; align-items: center; gap: 0.1rem;
+  border: 1px solid var(--black); background: var(--white); color: var(--black);
+  font: 500 0.7rem var(--body); text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer;
+}
+.day strong { font-family: var(--display); font-weight: 400; font-size: 1.9rem; line-height: 1; letter-spacing: 0.02em; }
+.day[aria-pressed="true"] { background: var(--black); color: var(--white); }
+
+.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.6rem, 1fr)); gap: 0.5rem; }
+.slot {
+  padding: 0.7rem 0.3rem; border: 1px solid var(--black); background: var(--white); color: var(--black);
+  font: 600 0.85rem var(--body); font-variant-numeric: tabular-nums; cursor: pointer;
+}
+.slot:hover:not(:disabled) { background: #eee; }
+.slot[aria-pressed="true"] { background: var(--black); color: var(--white); }
+.slot:disabled { cursor: not-allowed; border-color: var(--line-light); color: #b3b3b3; text-decoration: line-through; background: #f4f4f4; }
+.slots__empty { grid-column: 1 / -1; color: var(--grey-dark); padding: 1rem 0; }
+.legend { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.8rem; color: var(--grey-dark); margin-top: 0.25rem; }
+.legend span::before { content: ""; display: inline-block; width: 0.8rem; height: 0.8rem; margin-right: 0.4rem; vertical-align: -0.1rem; border: 1px solid var(--black); }
+.legend .is-picked::before { background: var(--black); }
+.legend .is-booked::before { background: #f4f4f4; border-color: var(--line-light); }
+
+.summary { border-top: 1px solid var(--black); padding-top: 1.25rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
+.summary__text { font-family: var(--display); font-size: 1.6rem; letter-spacing: 0.04em; min-width: 0; }
+.error { color: var(--error); font-size: 0.9rem; min-height: 1.4em; }
+
+.done { border: 1px solid var(--black); padding: 2rem; display: grid; gap: 1rem; }
+.done h3 { font-size: 2.2rem; }
+.done__actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+.done__actions .btn--ghost { color: var(--black); border-color: var(--black); }
+.done__actions .btn--ghost:hover { background: var(--black); color: var(--white); }
+
+/* Owner panel */
+.owner { margin-top: 3rem; border: 1px dashed var(--black); padding: 1.5rem; }
+.owner h3 { margin-bottom: 0.5rem; }
+.owner ul { list-style: none; margin: 1rem 0 0; padding: 0; }
+.owner li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.6rem 0; border-bottom: 1px solid var(--line-light); font-variant-numeric: tabular-nums; }
+.owner button { background: none; border: 1px solid var(--black); padding: 0.35rem 0.8rem; font: 600 0.75rem var(--body); text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; color: var(--black); }
+
+/* Visit */
+.visit { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+.card { border: 1px solid var(--line); padding: 2rem; min-width: 0; }
+.card h3 { margin-bottom: 1.25rem; }
+.card p + p { margin-top: 0.6rem; }
+.hours { list-style: none; margin: 0; padding: 0; }
+.hours li { display: flex; justify-content: space-between; padding: 0.45rem 0; border-bottom: 1px solid var(--line); font-size: 0.95rem; }
+.number { font-family: var(--display); font-size: 2rem; letter-spacing: 0.06em; user-select: all; }
+.copy { background: none; border: 1px solid var(--line); color: var(--grey); padding: 0.35rem 0.8rem; font: 600 0.7rem var(--body); text-transform: uppercase; letter-spacing: 0.15em; cursor: pointer; }
+.copy:hover { color: var(--white); border-color: var(--white); }
+
+.footer { border-top: 1px solid var(--line); padding-block: 3rem; text-align: center; color: var(--grey); font-size: 0.85rem; }
+.footer__logo { width: 64px; height: 64px; margin: 0 auto 1rem; border-radius: 50%; object-fit: cover; object-position: 50% 35%; background: var(--white); }
+
+.wa-float {
+  position: fixed; z-index: 20;
+  right: calc(1.25rem + env(safe-area-inset-right, 0px));
+  bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  width: 56px; height: 56px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--white); color: var(--black); border: 1px solid var(--black);
+  box-shadow: 0 6px 20px rgba(0,0,0,.45); transition: transform .2s;
+}
+.wa-float:hover { transform: scale(1.08); }
+
+@media (max-width: 760px) {
+  .nav__toggle { display: block; }
+  .nav__sub { display: none; }
+  .nav__links {
+    display: none; position: absolute; top: 100%; left: 0; right: 0;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: var(--black); border-bottom: 1px solid var(--line);
+  }
+  .nav__links.is-open { display: flex; }
+  .nav__links a { padding: 1rem 0; border-top: 1px solid var(--line); }
+  .nav__links .btn { margin: 1rem 0; }
+
+  .hero { grid-template-columns: 1fr; text-align: center; padding-block: 2.5rem 4rem; gap: 2.5rem; }
+  .hero__logo { width: 100%; max-width: 280px; margin: 12px auto 0; order: -1; }
+  .hero__tag { margin-left: auto; margin-right: auto; }
+  .hero__actions { justify-content: center; }
+
+  .section { padding-block: 4rem; }
+  .services { grid-template-columns: 1fr; }
+  .service:nth-child(odd), .service:nth-child(even) { padding: 1.4rem 0; border-right: 0; }
+  .book, .visit { grid-template-columns: 1fr; }
+  .card, .done { padding: 1.5rem; }
+}
+</style>
 </head>
 <body>
 
-  <!-- Navigation -->
-  <header class="nav">
+<header class="nav">
+  <div class="wrap nav__inner">
     <a href="#top" class="nav__brand">
       <img src="assets/logo.jpeg" alt="" class="nav__logo">
       <span>Reezy Fxdes <span class="nav__sub">/ VIP Classic Barbershop</span></span>
     </a>
-    <button class="nav__toggle" aria-label="Open menu" aria-expanded="false">
-      <span></span><span></span>
-    </button>
-    <nav class="nav__links">
+    <button class="nav__toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
+    <nav class="nav__links" id="nav-links">
       <a href="#services">Services</a>
       <a href="#book">Book</a>
       <a href="#visit">Visit</a>
       <a href="#book" class="btn btn--small">Book now</a>
     </nav>
-  </header>
+  </div>
+</header>
 
-  <main id="top">
-
-    <!-- Hero -->
-    <section class="hero">
-      <div class="hero__text">
-        <p class="eyebrow">Barbershop</p>
-        <h1>Reezy<br>Fxdes</h1>
-        <p class="hero__sub">/ VIP Classic Barbershop</p>
-        <p class="hero__tag">Clean fades. Sharp lines. Fresh every time.</p>
-        <div class="hero__actions">
-          <a href="#book" class="btn">Book a cut</a>
-          <a href="#services" class="btn btn--ghost">View services</a>
-        </div>
+<main id="top">
+  <section class="wrap hero">
+    <div>
+      <p class="eyebrow">Barbershop</p>
+      <h1>Reezy<br>Fxdes</h1>
+      <p class="hero__sub">/ VIP Classic Barbershop</p>
+      <p class="hero__tag">Clean fades. Sharp lines. Fresh every time.</p>
+      <div class="hero__actions">
+        <a href="#book" class="btn">Book a cut</a>
+        <a href="#services" class="btn btn--ghost">View services</a>
       </div>
-      <div class="hero__logo">
-        <img src="assets/logo.jpeg" alt="Reezy Fxdes logo">
-      </div>
-    </section>
+    </div>
+    <div class="hero__logo"><img src="assets/logo.jpeg" alt="Reezy Fxdes logo: a crowned portrait with a fade, framed by stars"></div>
+  </section>
 
-    <!-- Services: filled from script.js (SERVICES list) -->
-    <section id="services" class="section">
-      <div class="section__head">
-        <p class="eyebrow">What we do</p>
-        <h2>Services</h2>
-      </div>
-      <ul class="services" id="services-list"></ul>
-    </section>
+  <section id="services" class="wrap section">
+    <div class="section__head">
+      <p class="eyebrow">What we do</p>
+      <h2>Services</h2>
+    </div>
+    <ul class="services" id="services-list"></ul>
+  </section>
 
-    <!-- Booking -->
-    <section id="book" class="section section--invert">
+  <section id="book" class="band--white">
+    <div class="wrap section">
       <div class="section__head">
         <p class="eyebrow">Reserve your chair</p>
         <h2>Book an appointment</h2>
-        <p class="muted">Fill in your details. Your booking opens in WhatsApp, where you send it to confirm.</p>
+        <p class="muted">Pick a day and a free time, add your details, then send the booking to Reezy on WhatsApp.</p>
       </div>
 
-      <form id="booking-form" class="form" novalidate>
-        <div class="field">
-          <label for="name">Full name</label>
-          <input id="name" name="name" type="text" autocomplete="name" required>
-        </div>
-        <div class="field">
-          <label for="phone">Phone number</label>
-          <input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="+263 ..." required>
-        </div>
-        <div class="field field--full">
-          <label for="service">Service</label>
-          <select id="service" name="service" required>
+      <form id="booking-form" class="book" novalidate>
+        <div class="field full">
+          <label class="label" for="service">Service</label>
+          <select id="service" name="service">
             <option value="">Choose a service</option>
           </select>
         </div>
+
+        <div class="field full">
+          <span class="label" id="days-label">Day</span>
+          <div class="days" id="days" role="group" aria-labelledby="days-label"></div>
+        </div>
+
+        <div class="field full">
+          <span class="label" id="slots-label">Time</span>
+          <div class="slots" id="slots" role="group" aria-labelledby="slots-label"></div>
+          <div class="legend"><span>Free</span><span class="is-picked">Your pick</span><span class="is-booked">Booked</span></div>
+        </div>
+
         <div class="field">
-          <label for="date">Date</label>
-          <input id="date" name="date" type="date" required>
+          <label class="label" for="name">Full name</label>
+          <input id="name" name="name" type="text" autocomplete="name">
         </div>
         <div class="field">
-          <label for="time">Time</label>
-          <select id="time" name="time" required>
-            <option value="">Pick a date first</option>
-          </select>
+          <label class="label" for="phone">Phone number</label>
+          <input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="+263 ...">
         </div>
-        <div class="field field--full">
-          <label for="notes">Notes (optional)</label>
+        <div class="field full">
+          <label class="label" for="notes">Notes (optional)</label>
           <textarea id="notes" name="notes" rows="3" placeholder="Style reference, beard, kids cut..."></textarea>
         </div>
 
-        <p class="form__error" id="form-error" role="alert"></p>
-
-        <button type="submit" class="btn btn--light field--full">Send booking on WhatsApp</button>
+        <div class="full summary">
+          <p class="summary__text" id="summary">Choose a service, day and time</p>
+          <a id="send" class="btn btn--dark" href="#book" target="_blank" rel="noopener" aria-disabled="true">Send booking on WhatsApp</a>
+        </div>
+        <p class="error full" id="form-error" role="alert"></p>
       </form>
-    </section>
 
-    <!-- Visit / Contact -->
-    <section id="visit" class="section">
-      <div class="section__head">
-        <p class="eyebrow">Find us</p>
-        <h2>Visit</h2>
-      </div>
-      <div class="visit">
-        <div class="visit__card">
-          <h3>Hours</h3>
-          <ul class="hours" id="hours-list"></ul>
-        </div>
-        <div class="visit__card">
-          <h3>Contact</h3>
-          <p><a href="tel:+263719515630">+263 71 951 5630</a></p>
-          <p><a href="https://wa.me/263719515630" target="_blank" rel="noopener">Chat on WhatsApp</a></p>
-          <p class="muted">Address: to be added</p>
+      <div class="done" id="done" hidden>
+        <p class="eyebrow">Almost done</p>
+        <h3 id="done-title">Booking ready</h3>
+        <p>WhatsApp opened in a new tab with your booking filled in. Press <strong>send</strong> in WhatsApp so Reezy receives it. Reezy will reply to confirm.</p>
+        <div class="done__actions">
+          <a id="done-retry" class="btn btn--dark" href="#book" target="_blank" rel="noopener">Open WhatsApp again</a>
+          <button type="button" class="btn btn--ghost" id="done-new">Make another booking</button>
         </div>
       </div>
-    </section>
 
-  </main>
+      <div class="owner" id="owner" hidden>
+        <h3>Booked times</h3>
+        <p class="muted">Only you see this list. Free up a time to make it bookable again.</p>
+        <ul id="owner-list"></ul>
+      </div>
+    </div>
+  </section>
 
-  <footer class="footer">
+  <section id="visit" class="wrap section">
+    <div class="section__head">
+      <p class="eyebrow">Find us</p>
+      <h2>Visit</h2>
+    </div>
+    <div class="visit">
+      <div class="card">
+        <h3>Hours</h3>
+        <ul class="hours" id="hours-list"></ul>
+      </div>
+      <div class="card">
+        <h3>Contact</h3>
+        <p class="number" id="number">+263 71 951 5630</p>
+        <p><button type="button" class="copy" id="copy">Copy number</button></p>
+        <p><a href="https://wa.me/263719515630" target="_blank" rel="noopener">Chat on WhatsApp</a></p>
+        <p class="muted">Address: to be added</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
     <img src="assets/logo.jpeg" alt="" class="footer__logo">
-    <p>&copy; <span id="year"></span> Reezy Fxdes / VIP Classic Barbershop. All rights reserved.</p>
-  </footer>
+    <p>&copy; <span id="year"></span> Reezy Fxdes / VIP Classic Barbershop</p>
+  </div>
+</footer>
 
-  <a href="https://wa.me/263719515630" class="wa-float" target="_blank" rel="noopener" aria-label="Chat on WhatsApp">
-    <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2l-.4-.2z"/></svg>
-  </a>
+<a href="https://wa.me/263719515630" class="wa-float" target="_blank" rel="noopener" aria-label="Chat with Reezy Fxdes on WhatsApp">
+  <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2l-.4-.2z"/></svg>
+</a>
 
-  <script src="script.js"></script>
+<script>
+// ==== Shop settings ====
+const WHATSAPP_NUMBER = "263719515630";
+const SHOP_NAME = "Reezy Fxdes / VIP Classic Barbershop";
+const SERVICES = [
+  { name: "Haircut", desc: "Classic cut, styled to finish.", price: null },
+  { name: "Fade", desc: "Low, mid, high or skin fade.", price: null },
+  { name: "Fade + Beard", desc: "Fade with beard shape-up and line.", price: null },
+  { name: "Beard Trim", desc: "Shape, line and tidy.", price: null },
+  { name: "Line-up / Shape-up", desc: "Sharp edges around the hairline.", price: null },
+  { name: "Kids Cut", desc: "For under 12s.", price: null },
+  { name: "Women's Cut", desc: "Cuts, fades and shaping for women.", price: null },
+];
+const CURRENCY = "$";
+const OPEN_LATE = { open: "08:00", close: "22:00", label: "8am – Late" };
+const HOURS = { 0: OPEN_LATE, 1: OPEN_LATE, 2: OPEN_LATE, 3: OPEN_LATE, 4: OPEN_LATE, 5: OPEN_LATE, 6: OPEN_LATE };
+const SLOT_MINUTES = 30;
+const DAYS_AHEAD = 14;
+// ==== End of settings ====
+
+const $ = (id) => document.getElementById(id);
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const formatPrice = (p) => (p == null ? "TBA" : CURRENCY + p);
+const pad = (n) => String(n).padStart(2, "0");
+const isoDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const toMinutes = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+const toHHMM = (m) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+const to12h = (t) => { const [h, m] = t.split(":").map(Number); return `${(h % 12) || 12}:${pad(m)} ${h < 12 ? "AM" : "PM"}`; };
+const slotKey = (date, time) => `${date}_${time.replace(":", "")}`;
+const longDate = (iso) => new Date(iso + "T00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+const state = { service: "", date: "", time: "" };
+const booked = new Map();          // slotKey -> booking doc
+let store = null;                  // db collection, when the viewer has it
+let canWrite = false;
+
+// Services + select
+SERVICES.forEach((s) => {
+  const li = document.createElement("li");
+  li.className = "service";
+  li.innerHTML = `<div><h3>${esc(s.name)}</h3><p class="muted">${esc(s.desc)}</p></div><span class="service__price">${formatPrice(s.price)}</span>`;
+  $("services-list").appendChild(li);
+  const opt = document.createElement("option");
+  opt.value = s.name;
+  opt.textContent = s.price == null ? s.name : `${s.name} (${formatPrice(s.price)})`;
+  $("service").appendChild(opt);
+});
+
+// Hours
+[1, 2, 3, 4, 5, 6, 0].forEach((d) => {
+  const h = HOURS[d];
+  const li = document.createElement("li");
+  li.innerHTML = `<span>${DAY_NAMES[d]}</span><span>${h ? esc(h.label || `${h.open} – ${h.close}`) : "Closed"}</span>`;
+  $("hours-list").appendChild(li);
+});
+
+function slotsFor(date) {
+  const h = HOURS[new Date(date + "T00:00").getDay()];
+  if (!h) return [];
+  const now = new Date();
+  const isToday = date === isoDate(now);
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const out = [];
+  for (let m = toMinutes(h.open); m + SLOT_MINUTES <= toMinutes(h.close); m += SLOT_MINUTES) {
+    if (!isToday || m > nowMins) out.push(toHHMM(m));
+  }
+  return out;
+}
+
+// Day chips
+function renderDays() {
+  const wrap = $("days");
+  wrap.innerHTML = "";
+  const start = new Date();
+  for (let i = 0; i < DAYS_AHEAD; i++) {
+    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+    const iso = isoDate(d);
+    if (!HOURS[d.getDay()] || !slotsFor(iso).length) continue;
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "day";
+    b.dataset.date = iso;
+    b.setAttribute("aria-pressed", String(iso === state.date));
+    b.setAttribute("aria-label", longDate(iso));
+    const wd = i === 0 ? "Today" : d.toLocaleDateString("en-GB", { weekday: "short" });
+    b.innerHTML = `<span>${wd}</span><strong>${d.getDate()}</strong><span>${d.toLocaleDateString("en-GB", { month: "short" })}</span>`;
+    wrap.appendChild(b);
+  }
+}
+$("days").addEventListener("click", (e) => {
+  const b = e.target.closest(".day");
+  if (!b) return;
+  state.date = b.dataset.date;
+  state.time = "";
+  renderDays();
+  renderSlots();
+  update();
+});
+
+// Time slots
+function renderSlots() {
+  const wrap = $("slots");
+  wrap.innerHTML = "";
+  if (!state.date) { wrap.innerHTML = '<p class="slots__empty">Pick a day to see free times.</p>'; return; }
+  const slots = slotsFor(state.date);
+  if (!slots.length) { wrap.innerHTML = '<p class="slots__empty">No times left on this day.</p>'; return; }
+  slots.forEach((t) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "slot";
+    b.dataset.time = t;
+    b.textContent = to12h(t);
+    const taken = booked.has(slotKey(state.date, t));
+    b.disabled = taken;
+    if (taken) b.title = "Already booked";
+    b.setAttribute("aria-pressed", String(t === state.time && !taken));
+    wrap.appendChild(b);
+  });
+}
+$("slots").addEventListener("click", (e) => {
+  const b = e.target.closest(".slot");
+  if (!b || b.disabled) return;
+  state.time = b.dataset.time;
+  renderSlots();
+  update();
+});
+
+// Form fields
+const field = (id) => $(id).value.trim();
+$("service").addEventListener("change", () => { state.service = $("service").value; update(); });
+["name", "phone", "notes"].forEach((id) => $(id).addEventListener("input", update));
+
+function missing() {
+  const m = [];
+  if (!state.service) m.push("a service");
+  if (!state.date) m.push("a day");
+  if (!state.time) m.push("a time");
+  if (!field("name")) m.push("your name");
+  if (!field("phone")) m.push("your phone number");
+  return m;
+}
+
+function waLink() {
+  const lines = [
+    `*New Booking – ${SHOP_NAME}*`,
+    "",
+    `Name: ${field("name")}`,
+    `Phone: ${field("phone")}`,
+    `Service: ${state.service}`,
+    `Date: ${longDate(state.date)}`,
+    `Time: ${to12h(state.time)}`,
+  ];
+  if (field("notes")) lines.push(`Notes: ${field("notes")}`);
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
+}
+
+function update() {
+  const parts = [state.service, state.date && longDate(state.date), state.time && to12h(state.time)].filter(Boolean);
+  $("summary").textContent = parts.length ? parts.join(" · ") : "Choose a service, day and time";
+  const ready = missing().length === 0;
+  const send = $("send");
+  send.href = ready ? waLink() : "#book";
+  send.setAttribute("aria-disabled", String(!ready));
+  if (ready) $("form-error").textContent = "";
+}
+
+$("send").addEventListener("click", (e) => {
+  const m = missing();
+  if (m.length) {
+    e.preventDefault();
+    $("form-error").textContent = `Add ${m.join(", ").replace(/, ([^,]*)$/, " and $1")} to send your booking.`;
+    return;
+  }
+  if (booked.has(slotKey(state.date, state.time))) {
+    e.preventDefault();
+    $("form-error").textContent = "Someone just booked that time. Pick another free time.";
+    state.time = "";
+    renderSlots();
+    update();
+    return;
+  }
+  // Link opens WhatsApp in a new tab; record the slot so it shows as booked.
+  saveBooking({ date: state.date, time: state.time, service: state.service });
+  $("done-title").textContent = `${state.service} · ${longDate(state.date)} · ${to12h(state.time)}`;
+  $("done-retry").href = waLink();
+  $("booking-form").hidden = true;
+  $("done").hidden = false;
+});
+
+$("done-new").addEventListener("click", () => {
+  $("booking-form").reset();
+  state.service = ""; state.time = "";
+  $("done").hidden = true;
+  $("booking-form").hidden = false;
+  renderSlots();
+  update();
+});
+
+function saveBooking(b) {
+  const key = slotKey(b.date, b.time);
+  if (!store || !canWrite) return;
+  booked.set(key, b);
+  store.doc(key).set({ ...b, createdAt: new Date().toISOString() }).catch(() => { canWrite = false; });
+}
+
+// Copy number
+$("copy").addEventListener("click", () => {
+  const btn = $("copy");
+  const done = (t) => { btn.textContent = t; setTimeout(() => (btn.textContent = "Copy number"), 1800); };
+  try {
+    navigator.clipboard.writeText("+263719515630").then(() => done("Copied"), () => { selectNumber(); done("Press Ctrl+C"); });
+  } catch { selectNumber(); done("Press Ctrl+C"); }
+});
+function selectNumber() {
+  const r = document.createRange();
+  r.selectNodeContents($("number"));
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+}
+
+// Mobile menu
+$("nav-toggle").addEventListener("click", () => {
+  const open = $("nav-links").classList.toggle("is-open");
+  $("nav-toggle").setAttribute("aria-expanded", String(open));
+});
+$("nav-links").addEventListener("click", (e) => {
+  if (e.target.tagName === "A") { $("nav-links").classList.remove("is-open"); $("nav-toggle").setAttribute("aria-expanded", "false"); }
+});
+
+$("year").textContent = new Date().getFullYear();
+
+// Start on the first day that still has free times
+renderDays();
+const firstDay = $("days").querySelector(".day");
+if (firstDay) state.date = firstDay.dataset.date;
+renderDays();
+renderSlots();
+update();
+
+// Shared bookings: booked times show as taken for everyone who can see them
+(async () => {
+  if (!window.claude || !window.claude.use) return;
+  const [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+  if (!db) return;
+  store = db.collection("bookings");
+  canWrite = user ? (await user.can("data.write")) !== false : true;
+  const isOwner = user ? await user.isOwner() : false;
+
+  store.where("date", ">=", isoDate(new Date())).onSnapshot((snap) => {
+    booked.clear();
+    snap.docs.forEach((d) => booked.set(d.id, d.data()));
+    // Someone else took the time this viewer had picked: clear the pick
+    if ($("done").hidden && state.time && booked.has(slotKey(state.date, state.time))) {
+      state.time = "";
+      update();
+    }
+    renderSlots();
+    if (isOwner) renderOwner();
+  }, () => {});
+
+  function renderOwner() {
+    $("owner").hidden = false;
+    const list = $("owner-list");
+    const rows = [...booked.entries()].sort(([a], [b]) => a.localeCompare(b));
+    list.innerHTML = rows.length ? "" : '<li class="muted">No bookings yet.</li>';
+    rows.forEach(([key, b]) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<span>${esc(longDate(b.date))} · ${esc(to12h(b.time))} · ${esc(b.service || "")}</span>`;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = "Free up";
+      btn.addEventListener("click", () => { btn.disabled = true; store.doc(key).delete().catch(() => { btn.disabled = false; }); });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+  }
+})();
+</script>
 </body>
 </html>
