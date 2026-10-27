@@ -142,19 +142,7 @@ p { margin: 0; }
 .day strong { font-family: var(--display); font-weight: 400; font-size: 1.9rem; line-height: 1; letter-spacing: 0.02em; }
 .day[aria-pressed="true"] { background: var(--black); color: var(--white); }
 
-.slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.6rem, 1fr)); gap: 0.5rem; }
-.slot {
-  padding: 0.7rem 0.3rem; border: 1px solid var(--black); background: var(--white); color: var(--black);
-  font: 600 0.85rem var(--body); font-variant-numeric: tabular-nums; cursor: pointer;
-}
-.slot:hover:not(:disabled) { background: #eee; }
-.slot[aria-pressed="true"] { background: var(--black); color: var(--white); }
-.slot:disabled { cursor: not-allowed; border-color: var(--line-light); color: #b3b3b3; text-decoration: line-through; background: #f4f4f4; }
-.slots__empty { grid-column: 1 / -1; color: var(--grey-dark); padding: 1rem 0; }
-.legend { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.8rem; color: var(--grey-dark); margin-top: 0.25rem; }
-.legend span::before { content: ""; display: inline-block; width: 0.8rem; height: 0.8rem; margin-right: 0.4rem; vertical-align: -0.1rem; border: 1px solid var(--black); }
-.legend .is-picked::before { background: var(--black); }
-.legend .is-booked::before { background: #f4f4f4; border-color: var(--line-light); }
+#time { font-variant-numeric: tabular-nums; }
 
 .summary { border-top: 1px solid var(--black); padding-top: 1.25rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
 .summary__text { font-family: var(--display); font-size: 1.6rem; letter-spacing: 0.04em; min-width: 0; }
@@ -284,9 +272,8 @@ p { margin: 0; }
         </div>
 
         <div class="field full">
-          <span class="label" id="slots-label">Time</span>
-          <div class="slots" id="slots" role="group" aria-labelledby="slots-label"></div>
-          <div class="legend"><span>Free</span><span class="is-picked">Your pick</span><span class="is-booked">Booked</span></div>
+          <label class="label" for="time">Time</label>
+          <select id="time" name="time"></select>
         </div>
 
         <div class="field">
@@ -459,33 +446,26 @@ $("days").addEventListener("click", (e) => {
   update();
 });
 
-// Time slots
+// Time dropdown: 30-minute steps from opening; booked times are listed but can't be picked
 function renderSlots() {
-  const wrap = $("slots");
-  wrap.innerHTML = "";
-  if (!state.date) { wrap.innerHTML = '<p class="slots__empty">Pick a day to see free times.</p>'; return; }
+  const sel = $("time");
+  sel.innerHTML = "";
+  const first = new Option("", "");
+  sel.add(first);
+  if (!state.date) { first.text = "Pick a day first"; return; }
   const slots = slotsFor(state.date);
-  if (!slots.length) { wrap.innerHTML = '<p class="slots__empty">No times left on this day.</p>'; return; }
+  if (!slots.length) { first.text = "No times left on this day"; return; }
+  first.text = "Choose a time";
   slots.forEach((t) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "slot";
-    b.dataset.time = t;
-    b.textContent = to12h(t);
     const taken = booked.has(slotKey(state.date, t));
-    b.disabled = taken;
-    if (taken) b.title = "Already booked";
-    b.setAttribute("aria-pressed", String(t === state.time && !taken));
-    wrap.appendChild(b);
+    const opt = new Option(taken ? `${to12h(t)} (booked)` : to12h(t), t);
+    opt.disabled = taken;
+    sel.add(opt);
   });
+  if (state.time && booked.has(slotKey(state.date, state.time))) state.time = "";
+  sel.value = state.time;
 }
-$("slots").addEventListener("click", (e) => {
-  const b = e.target.closest(".slot");
-  if (!b || b.disabled) return;
-  state.time = b.dataset.time;
-  renderSlots();
-  update();
-});
+$("time").addEventListener("change", () => { state.time = $("time").value; update(); });
 
 // Form fields
 const field = (id) => $(id).value.trim();
