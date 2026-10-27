@@ -70,6 +70,14 @@ h3 { font-size: 1.6rem; }
   text-decoration: none;
 }
 .nav__logo { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; object-position: 50% 35%; background: var(--white); }
+.nav__sub { color: var(--grey); font-size: 1.1rem; }
+.hero__sub {
+  font-family: var(--display);
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  letter-spacing: 0.08em;
+  color: var(--grey);
+  margin-top: 0.75rem;
+}
 .nav__links { display: flex; align-items: center; gap: 2rem; }
 .nav__links a:not(.btn) {
   text-decoration: none; text-transform: uppercase;
@@ -169,6 +177,7 @@ h3 { font-size: 1.6rem; }
 /* Mobile */
 @media (max-width: 760px) {
   .nav__toggle { display: block; }
+  .nav__sub { display: none; } /* too long for phone nav; shown in the hero instead */
   .nav__links {
     display: none;
     position: absolute; top: 100%; left: 0; right: 0;

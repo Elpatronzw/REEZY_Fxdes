@@ -17,14 +17,16 @@ const SERVICES = [
 const CURRENCY = "$";
 
 // Opening hours per weekday (0 = Sunday). null = closed. Times are 24h "HH:MM".
+// "close" is when the last booking slot ends; "label" is what the hours list shows instead.
+const OPEN_LATE = { open: "08:00", close: "22:00", label: "8am – Late" };
 const HOURS = {
-  0: null,
-  1: { open: "08:00", close: "18:00" },
-  2: { open: "08:00", close: "18:00" },
-  3: { open: "08:00", close: "18:00" },
-  4: { open: "08:00", close: "18:00" },
-  5: { open: "08:00", close: "19:00" },
-  6: { open: "08:00", close: "19:00" },
+  0: OPEN_LATE,
+  1: OPEN_LATE,
+  2: OPEN_LATE,
+  3: OPEN_LATE,
+  4: OPEN_LATE,
+  5: OPEN_LATE,
+  6: OPEN_LATE,
 };
 
 // Length of each booking slot, in minutes
@@ -61,7 +63,7 @@ const hoursList = document.getElementById("hours-list");
 [1, 2, 3, 4, 5, 6, 0].forEach((d) => {
   const h = HOURS[d];
   const li = document.createElement("li");
-  li.innerHTML = `<span>${DAY_NAMES[d]}</span><span>${h ? `${h.open} – ${h.close}` : "Closed"}</span>`;
+  li.innerHTML = `<span>${DAY_NAMES[d]}</span><span>${h ? h.label || `${h.open} – ${h.close}` : "Closed"}</span>`;
   hoursList.appendChild(li);
 });
 
@@ -133,7 +135,7 @@ form.addEventListener("submit", (e) => {
   });
 
   const lines = [
-    "*New Booking – Reezy Fxdes*",
+    "*New Booking – Reezy Fxdes / VIP Classic Barbershop*",
     "",
     `Name: ${data.name}`,
     `Phone: ${data.phone}`,
