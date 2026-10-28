@@ -154,6 +154,26 @@ p { margin: 0; }
 
 #time { font-variant-numeric: tabular-nums; }
 
+.barbers { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.barber {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.2rem;
+  padding: 0.9rem 1.1rem; border: 1px solid var(--black); background: var(--white); color: var(--black);
+  cursor: pointer; text-align: left;
+}
+.barber span { font: 600 0.7rem var(--body); text-transform: uppercase; letter-spacing: 0.15em; color: var(--grey-dark); }
+.barber strong { font-family: var(--display); font-weight: 400; font-size: 2rem; line-height: 1; letter-spacing: 0.04em; }
+.barber[aria-pressed="true"] { background: var(--black); color: var(--white); }
+.barber[aria-pressed="true"] span { color: var(--grey); }
+
+.rebook {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem 2rem;
+  border: 1px solid var(--black); padding: 1.25rem 1.5rem; margin-bottom: 2rem;
+}
+.rebook .eyebrow { margin-bottom: 0.3rem; }
+.rebook__text { font-size: 1.05rem; }
+.rebook__actions { display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap; }
+.linkbtn { background: none; border: 0; padding: 0; font: inherit; font-size: 0.9rem; text-decoration: underline; color: var(--grey-dark); cursor: pointer; }
+
 .summary { border-top: 1px solid var(--black); padding-top: 1.25rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
 .summary__text { font-family: var(--display); font-size: 1.6rem; letter-spacing: 0.04em; min-width: 0; }
 .error { color: var(--error); font-size: 0.9rem; min-height: 1.4em; }
@@ -187,6 +207,8 @@ p { margin: 0; }
 .copy:hover { color: var(--white); border-color: var(--white); }
 
 .footer { border-top: 1px solid var(--line); padding-block: 3rem; text-align: center; color: var(--grey); font-size: 0.85rem; }
+.footer__portal { margin-top: 0.75rem; }
+.footer__portal a { color: var(--grey); }
 .footer__logo { width: 64px; height: 64px; margin: 0 auto 1rem; border-radius: 50%; object-fit: cover; object-position: 50% 35%; background: var(--white); }
 
 .wa-float {
@@ -279,7 +301,18 @@ p { margin: 0; }
       <div class="section__head">
         <p class="eyebrow">Reserve your chair</p>
         <h2>Book an appointment</h2>
-        <p class="muted">Pick a day and a free time, add your details, then send the booking to Reezy on WhatsApp.</p>
+        <p class="muted">Pick a service, your barber, a day and a free time, then add your details.</p>
+      </div>
+
+      <div class="rebook" id="rebook" hidden>
+        <div>
+          <p class="eyebrow">Welcome back</p>
+          <p class="rebook__text" id="rebook-text"></p>
+        </div>
+        <div class="rebook__actions">
+          <button type="button" class="btn btn--dark" id="rebook-go">Rebook your usual haircut</button>
+          <button type="button" class="linkbtn" id="rebook-forget">Not you?</button>
+        </div>
       </div>
 
       <form id="booking-form" class="book" novalidate>
@@ -288,6 +321,11 @@ p { margin: 0; }
           <select id="service" name="service">
             <option value="">Choose a service</option>
           </select>
+        </div>
+
+        <div class="field full">
+          <span class="label" id="barbers-label">Barber</span>
+          <div class="barbers" id="barbers" role="group" aria-labelledby="barbers-label"></div>
         </div>
 
         <div class="field full">
@@ -321,9 +359,9 @@ p { margin: 0; }
       </form>
 
       <div class="done" id="done" hidden>
-        <p class="eyebrow">Almost done</p>
+        <p class="eyebrow" id="done-eyebrow">Almost done</p>
         <h3 id="done-title">Booking ready</h3>
-        <p>WhatsApp opened in a new tab with your booking filled in. Press <strong>send</strong> in WhatsApp so Reezy receives it. Reezy will reply to confirm.</p>
+        <p id="done-text"></p>
         <div class="done__actions">
           <a id="done-retry" class="btn btn--dark" href="#book" target="_blank" rel="noopener">Open WhatsApp again</a>
           <button type="button" class="btn btn--ghost" id="done-new">Make another booking</button>
@@ -354,7 +392,8 @@ p { margin: 0; }
           <p class="label muted">Main · WhatsApp bookings</p>
           <p class="number" id="number-main">+263 71 951 5630</p>
           <p><button type="button" class="copy" data-copy="+263719515630" data-target="number-main">Copy number</button>
-             <a class="wa-link" href="https://wa.me/263719515630" target="_blank" rel="noopener">Chat on WhatsApp</a></p>
+             <a class="wa-link" href="https://wa.me/263719515630" target="_blank" rel="noopener">Chat on WhatsApp</a>
+             <a class="wa-link" href="https://wa.me/c/263719515630" target="_blank" rel="noopener">View our catalogue</a></p>
         </div>
         <div class="contact-row">
           <p class="label muted">Secondary</p>
@@ -374,10 +413,11 @@ p { margin: 0; }
   <div class="wrap">
     <img src="assets/logo.jpeg" alt="" class="footer__logo">
     <p>&copy; <span id="year"></span> Reezy Fxdes / VIP Classic Barbershop</p>
+    <p class="footer__portal" id="portal-link"><a href="portal.html">Barbers' portal</a></p>
   </div>
 </footer>
 
-<a href="https://wa.me/263719515630" class="wa-float" target="_blank" rel="noopener" aria-label="Chat with Reezy Fxdes on WhatsApp">
+<a href="https://wa.me/c/263719515630" class="wa-float" target="_blank" rel="noopener" aria-label="View the Reezy Fxdes catalogue on WhatsApp" title="View our catalogue on WhatsApp">
   <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2l-.4-.2z"/></svg>
 </a>
 
@@ -385,6 +425,10 @@ p { margin: 0; }
 // ==== Shop settings ====
 const WHATSAPP_NUMBER = "263719515630";
 const SHOP_NAME = "Reezy Fxdes / VIP Classic Barbershop";
+const BARBERS = ["Brian", "Reezy"];
+// Booking backend: the Google Apps Script web app URL (see backend/SETUP.md).
+// Empty = bookings are sent by WhatsApp only, with no portal or reminders.
+const BACKEND_URL = "";
 // Prices from the shop's price list (effective 20 October)
 const SERVICES = [
   { group: "Gents", name: "Fade", price: 5 },
@@ -411,12 +455,13 @@ const isoDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getD
 const toMinutes = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
 const toHHMM = (m) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
 const to12h = (t) => { const [h, m] = t.split(":").map(Number); return `${(h % 12) || 12}:${pad(m)} ${h < 12 ? "AM" : "PM"}`; };
-const slotKey = (date, time) => `${date}_${time.replace(":", "")}`;
+const slotKey = (date, time, barber) => `${date}_${time.replace(":", "")}_${barber}`;
 const longDate = (iso) => new Date(iso + "T00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-const state = { service: "", date: "", time: "" };
-const booked = new Map();          // slotKey -> booking doc
+const state = { service: "", barber: "", date: "", time: "" };
+const booked = new Map();          // slotKey -> booking (date, time, barber, service)
+const isTaken = (date, time) => !!state.barber && booked.has(slotKey(date, time, state.barber));
 let store = null;                  // db collection, when the viewer has it
 let canWrite = false;
 
@@ -486,9 +531,25 @@ $("days").addEventListener("click", (e) => {
   renderDays();
   renderSlots();
   update();
+  loadBackendSlots(state.date);
 });
 
-// Time dropdown: 30-minute steps from opening; booked times are listed but can't be picked
+// Barber picker
+function renderBarbers() {
+  $("barbers").innerHTML = BARBERS.map((name, i) =>
+    `<button type="button" class="barber" data-barber="${esc(name)}" aria-pressed="${name === state.barber}">
+       <span>Barber ${i + 1}</span><strong>${esc(name)}</strong></button>`).join("");
+}
+$("barbers").addEventListener("click", (e) => {
+  const b = e.target.closest(".barber");
+  if (!b) return;
+  state.barber = b.dataset.barber;
+  renderBarbers();
+  renderSlots();
+  update();
+});
+
+// Time dropdown: 30-minute steps from opening; the chosen barber's booked times can't be picked
 function renderSlots() {
   const sel = $("time");
   sel.innerHTML = "";
@@ -497,15 +558,27 @@ function renderSlots() {
   if (!state.date) { first.text = "Pick a day first"; return; }
   const slots = slotsFor(state.date);
   if (!slots.length) { first.text = "No times left on this day"; return; }
-  first.text = "Choose a time";
+  first.text = state.barber ? "Choose a time" : "Choose a time (pick a barber to see their free times)";
   slots.forEach((t) => {
-    const taken = booked.has(slotKey(state.date, t));
+    const taken = isTaken(state.date, t);
     const opt = new Option(taken ? `${to12h(t)} (booked)` : to12h(t), t);
     opt.disabled = taken;
     sel.add(opt);
   });
-  if (state.time && booked.has(slotKey(state.date, state.time))) state.time = "";
+  if (state.time && (isTaken(state.date, state.time) || !slots.includes(state.time))) state.time = "";
   sel.value = state.time;
+}
+
+// Booked times from the backend, for one day (all barbers). No client details are returned.
+async function loadBackendSlots(date) {
+  if (!BACKEND_URL || !date) return;
+  try {
+    const res = await (await fetch(`${BACKEND_URL}?action=slots&date=${encodeURIComponent(date)}`)).json();
+    if (!res.ok) return;
+    for (const k of [...booked.keys()]) if (k.startsWith(date + "_")) booked.delete(k);
+    res.booked.forEach((b) => booked.set(slotKey(date, b.time, b.barber), { date, ...b }));
+    if (state.date === date) { renderSlots(); update(); }
+  } catch { /* offline or backend down: times show as free; the backend still refuses double bookings */ }
 }
 $("time").addEventListener("change", () => { state.time = $("time").value; update(); });
 
@@ -517,6 +590,7 @@ $("service").addEventListener("change", () => { state.service = $("service").val
 function missing() {
   const m = [];
   if (!state.service) m.push("a service");
+  if (!state.barber) m.push("a barber");
   if (!state.date) m.push("a day");
   if (!state.time) m.push("a time");
   if (!field("name")) m.push("your name");
@@ -531,6 +605,7 @@ function waLink() {
     `Name: ${field("name")}`,
     `Phone: ${field("phone")}`,
     `Service: ${state.service}`,
+    `Barber: ${state.barber}`,
     `Date: ${longDate(state.date)}`,
     `Time: ${to12h(state.time)}`,
   ];
@@ -538,9 +613,12 @@ function waLink() {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
 }
 
+const SEND_LABEL = BACKEND_URL ? "Confirm booking" : "Send booking on WhatsApp";
+$("send").textContent = SEND_LABEL;
+
 function update() {
-  const parts = [state.service, state.date && longDate(state.date), state.time && to12h(state.time)].filter(Boolean);
-  $("summary").textContent = parts.length ? parts.join(" · ") : "Choose a service, day and time";
+  const parts = [state.service, state.barber && `with ${state.barber}`, state.date && longDate(state.date), state.time && to12h(state.time)].filter(Boolean);
+  $("summary").textContent = parts.length ? parts.join(" · ") : "Choose a service, barber, day and time";
   const ready = missing().length === 0;
   const send = $("send");
   send.href = ready ? waLink() : "#book";
@@ -548,27 +626,72 @@ function update() {
   if (ready) $("form-error").textContent = "";
 }
 
-$("send").addEventListener("click", (e) => {
+const DONE_TEXT = {
+  whatsapp: ["Almost done", "WhatsApp opened in a new tab with your booking filled in. Press send in WhatsApp so Reezy receives it. Reezy will reply to confirm.", "Open WhatsApp again"],
+  saved: ["Booked", "Your booking is saved and the barbers have been notified. Please arrive a few minutes before your time.", "Message the shop on WhatsApp"],
+  fallback: ["One more step", "We couldn't save your booking online. Tap below to send it to Reezy on WhatsApp instead.", "Send booking on WhatsApp"],
+};
+function showDone(mode) {
+  const [eyebrow, text, retry] = DONE_TEXT[mode];
+  $("done-eyebrow").textContent = eyebrow;
+  $("done-title").textContent = `${state.service} · ${state.barber} · ${longDate(state.date)} · ${to12h(state.time)}`;
+  $("done-text").textContent = text;
+  $("done-retry").textContent = retry;
+  $("done-retry").href = waLink();
+  $("booking-form").hidden = true;
+  $("done").hidden = false;
+  renderRebook();
+}
+
+let sending = false;
+$("send").addEventListener("click", async (e) => {
   const m = missing();
   if (m.length) {
     e.preventDefault();
     $("form-error").textContent = `Add ${m.join(", ").replace(/, ([^,]*)$/, " and $1")} to send your booking.`;
     return;
   }
-  if (booked.has(slotKey(state.date, state.time))) {
+  if (isTaken(state.date, state.time)) {
     e.preventDefault();
-    $("form-error").textContent = "Someone just booked that time. Pick another free time.";
+    $("form-error").textContent = `${state.barber} was just booked at that time. Pick another free time.`;
     state.time = "";
     renderSlots();
     update();
     return;
   }
-  // Link opens WhatsApp in a new tab; record the slot so it shows as booked.
-  saveBooking({ date: state.date, time: state.time, service: state.service });
-  $("done-title").textContent = `${state.service} · ${longDate(state.date)} · ${to12h(state.time)}`;
-  $("done-retry").href = waLink();
-  $("booking-form").hidden = true;
-  $("done").hidden = false;
+  const booking = {
+    date: state.date, time: state.time, barber: state.barber, service: state.service,
+    name: field("name"), phone: field("phone"), notes: field("notes"),
+  };
+  rememberClient(booking);
+
+  if (!BACKEND_URL) {
+    // The link itself opens WhatsApp in a new tab; record the slot so it shows as booked.
+    saveBooking(booking);
+    showDone("whatsapp");
+    return;
+  }
+
+  // Backend: save the booking (it notifies the barbers), no WhatsApp step needed.
+  e.preventDefault();
+  if (sending) return;
+  sending = true;
+  $("send").textContent = "Booking...";
+  let res = null;
+  try {
+    res = await (await fetch(BACKEND_URL, { method: "POST", body: JSON.stringify({ action: "book", ...booking }) })).json();
+  } catch { /* handled below */ }
+  sending = false;
+  $("send").textContent = SEND_LABEL;
+  const key = slotKey(booking.date, booking.time, booking.barber);
+  if (res && res.ok) { booked.set(key, booking); showDone("saved"); }
+  else if (res && res.error === "taken") {
+    booked.set(key, booking);
+    $("form-error").textContent = `${booking.barber} was just booked at that time. Pick another free time.`;
+    state.time = "";
+    renderSlots();
+    update();
+  } else showDone("fallback");
 });
 
 $("done-new").addEventListener("click", () => {
@@ -577,15 +700,55 @@ $("done-new").addEventListener("click", () => {
   $("done").hidden = true;
   $("booking-form").hidden = false;
   renderSlots();
+  renderRebook();
   update();
 });
 
+// Claude demo only: keep booked slots in the page's shared store (no client details)
 function saveBooking(b) {
-  const key = slotKey(b.date, b.time);
   if (!store || !canWrite) return;
-  booked.set(key, b);
-  store.doc(key).set({ ...b, createdAt: new Date().toISOString() }).catch(() => { canWrite = false; });
+  const key = slotKey(b.date, b.time, b.barber);
+  const slot = { date: b.date, time: b.time, barber: b.barber, service: b.service };
+  booked.set(key, slot);
+  store.doc(key).set({ ...slot, createdAt: new Date().toISOString() }).catch(() => { canWrite = false; });
 }
+
+// "Rebook your usual haircut": remembered on this phone only
+const CLIENT_KEY = "reezy:client";
+function loadClient() {
+  try { return JSON.parse(localStorage.getItem(CLIENT_KEY) || "null"); } catch { return null; }
+}
+function rememberClient(b) {
+  try {
+    localStorage.setItem(CLIENT_KEY, JSON.stringify({ name: b.name, phone: b.phone, service: b.service, barber: b.barber, time: b.time }));
+  } catch { /* storage blocked: rebook just won't show */ }
+}
+function renderRebook() {
+  const c = loadClient();
+  $("rebook").hidden = !c || !$("done").hidden;
+  if (!c) return;
+  const first = (c.name || "").split(" ")[0] || "there";
+  $("rebook-text").textContent = `Hi ${first}, your usual is ${c.service} with ${c.barber} at ${to12h(c.time)}.`;
+}
+$("rebook-go").addEventListener("click", () => {
+  const c = loadClient();
+  if (!c) return;
+  $("name").value = c.name || "";
+  $("phone").value = c.phone || "";
+  if ([...$("service").options].some((o) => o.value === c.service)) { $("service").value = c.service; state.service = c.service; }
+  if (BARBERS.includes(c.barber)) state.barber = c.barber;
+  renderBarbers();
+  const free = state.date && slotsFor(state.date).includes(c.time) && !isTaken(state.date, c.time);
+  state.time = free ? c.time : "";
+  renderSlots();
+  update();
+  $("form-error").textContent = free ? "" : `Your usual time isn't free on this day. Pick another day or time.`;
+  $("days").scrollIntoView({ behavior: "smooth", block: "center" });
+});
+$("rebook-forget").addEventListener("click", () => {
+  try { localStorage.removeItem(CLIENT_KEY); } catch { /* ignore */ }
+  renderRebook();
+});
 
 // Copy number buttons
 document.querySelectorAll(".copy").forEach((btn) => {
@@ -617,8 +780,14 @@ renderDays();
 const firstDay = $("days").querySelector(".day");
 if (firstDay) state.date = firstDay.dataset.date;
 renderDays();
+renderBarbers();
 renderSlots();
+renderRebook();
 update();
+loadBackendSlots(state.date);
+
+// The barbers' portal is a separate page on the public website, not part of the Claude demo
+if (window.claude) $("portal-link").hidden = true;
 
 // Shared bookings: booked times show as taken for everyone who can see them
 (async () => {
@@ -633,7 +802,7 @@ update();
     booked.clear();
     snap.docs.forEach((d) => booked.set(d.id, d.data()));
     // Someone else took the time this viewer had picked: clear the pick
-    if ($("done").hidden && state.time && booked.has(slotKey(state.date, state.time))) {
+    if ($("done").hidden && state.time && isTaken(state.date, state.time)) {
       state.time = "";
       update();
     }
@@ -648,7 +817,7 @@ update();
     list.innerHTML = rows.length ? "" : '<li class="muted">No bookings yet.</li>';
     rows.forEach(([key, b]) => {
       const li = document.createElement("li");
-      li.innerHTML = `<span>${esc(longDate(b.date))} · ${esc(to12h(b.time))} · ${esc(b.service || "")}</span>`;
+      li.innerHTML = `<span>${esc(longDate(b.date))} · ${esc(to12h(b.time))} · ${esc(b.barber || "")} · ${esc(b.service || "")}</span>`;
       const btn = document.createElement("button");
       btn.type = "button";
       btn.textContent = "Free up";

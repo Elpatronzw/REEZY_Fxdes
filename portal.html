@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Barbers' Portal · Reezy Fxdes</title>
+<link rel="icon" href="assets/logo.jpeg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --black: #0a0a0a; --ink: #141414; --white: #ffffff; --grey: #8f8f8f; --grey-dark: #6b6b6b;
+  --line: #262626; --alert: #ffd84d; --error: #ff6b6b;
+  --display: "Bebas Neue", Impact, "Arial Narrow", sans-serif;
+  --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--black); color: var(--white); font: 16px/1.5 var(--body); }
+.wrap { max-width: 900px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--display); font-weight: 400; letter-spacing: 0.04em; line-height: 1; margin: 0; }
+p { margin: 0; }
+.muted { color: var(--grey); }
+a { color: inherit; }
+button, input { font: inherit; }
+:focus-visible { outline: 2px solid var(--white); outline-offset: 3px; }
+
+.top { border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 0.8rem; }
+.brand { display: flex; align-items: center; gap: 0.7rem; text-decoration: none; font-family: var(--display); font-size: 1.5rem; letter-spacing: 0.06em; }
+.brand img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; object-position: 50% 35%; background: var(--white); }
+.brand span { color: var(--grey); font-size: 1.1rem; }
+
+.btn { display: inline-block; padding: 0.7rem 1.2rem; border: 1px solid var(--white); background: var(--white); color: var(--black); font: 600 0.75rem var(--body); text-transform: uppercase; letter-spacing: 0.15em; cursor: pointer; text-decoration: none; }
+.btn--ghost { background: transparent; color: var(--white); border-color: var(--line); }
+.btn--ghost:hover { border-color: var(--white); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+
+main { padding-block: 2rem 4rem; display: grid; gap: 1.5rem; }
+.login { max-width: 360px; display: grid; gap: 1rem; padding-top: 2rem; }
+.login h1 { font-size: 3rem; }
+.login input { padding: 0.85rem 1rem; border: 1px solid var(--white); background: var(--black); color: var(--white); font-size: 1.2rem; letter-spacing: 0.2em; }
+.error { color: var(--error); min-height: 1.5em; font-size: 0.9rem; }
+
+.head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 1rem; }
+.head h1 { font-size: clamp(2.5rem, 7vw, 3.5rem); }
+.head__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; font-size: 0.85rem; }
+
+.alert { background: var(--alert); color: var(--black); padding: 1rem 1.25rem; display: grid; gap: 0.25rem; }
+.alert strong { font-family: var(--display); font-weight: 400; font-size: 1.6rem; letter-spacing: 0.04em; }
+
+.filters { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
+.chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.chip { padding: 0.45rem 0.9rem; border: 1px solid var(--line); background: transparent; color: var(--grey); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--white); color: var(--black); border-color: var(--white); }
+
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); }
+.stat { padding: 0.9rem 1rem; }
+.stat + .stat { border-left: 1px solid var(--line); }
+.stat strong { display: block; font-family: var(--display); font-weight: 400; font-size: 2.2rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--grey); }
+
+.day h2 { font-size: 1.6rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--white); margin-bottom: 0.25rem; }
+.list { list-style: none; margin: 0; padding: 0; }
+.item { display: grid; grid-template-columns: 5.5rem 1fr auto; gap: 0.25rem 1rem; align-items: start; padding: 1rem 0; border-bottom: 1px solid var(--line); }
+.item__time { font-family: var(--display); font-size: 1.8rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.item__main { min-width: 0; display: grid; gap: 0.2rem; }
+.item__svc { font-weight: 600; }
+.item__client a { color: var(--grey); }
+.item__notes { color: var(--grey); font-size: 0.9rem; overflow-wrap: anywhere; }
+.item__actions { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
+.item__actions button { padding: 0.35rem 0.7rem; border: 1px solid var(--line); background: none; color: var(--white); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; }
+.item__actions button:hover { border-color: var(--white); }
+.pill { display: inline-block; padding: 0.1rem 0.5rem; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; border: 1px solid var(--line); color: var(--grey); }
+.pill--barber { color: var(--white); border-color: var(--white); }
+.item.is-done, .item.is-cancelled { opacity: 0.45; }
+.item.is-cancelled .item__time, .item.is-cancelled .item__svc { text-decoration: line-through; }
+.item.is-soon { background: rgba(255, 216, 77, 0.08); box-shadow: inset 3px 0 0 var(--alert); padding-left: 0.75rem; }
+.empty { border: 1px dashed var(--line); padding: 2rem; text-align: center; color: var(--grey); }
+
+@media (max-width: 600px) {
+  .brand span { display: none; }
+  .item { grid-template-columns: 4.5rem 1fr; }
+  .item__actions { grid-column: 2; justify-content: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="assets/logo.jpeg" alt="">Reezy Fxdes <span>/ Barbers' portal</span></a>
+    <button class="btn btn--ghost" id="logout" hidden>Log out</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="not-connected" hidden>
+    <div class="empty">The portal isn't connected to the booking system yet. Bookings still arrive on WhatsApp.</div>
+  </section>
+
+  <form class="login" id="login" hidden>
+    <h1>Barbers' portal</h1>
+    <p class="muted">Enter the shop PIN to see bookings.</p>
+    <label for="pin" class="muted">PIN</label>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="current-password">
+    <button class="btn" type="submit" id="login-btn">Open bookings</button>
+    <p class="error" id="login-error" role="alert"></p>
+  </form>
+
+  <section id="app" hidden>
+    <div class="head">
+      <h1>Bookings</h1>
+      <div class="head__meta">
+        <span class="muted" id="updated">Loading…</span>
+        <button class="btn btn--ghost" id="refresh">Refresh</button>
+        <button class="btn btn--ghost" id="alerts">Turn on alerts</button>
+      </div>
+    </div>
+
+    <div class="alert" id="soon" hidden role="status"></div>
+
+    <div class="stats">
+      <div class="stat"><strong id="stat-today">0</strong><span>Today</span></div>
+      <div class="stat"><strong id="stat-next">–</strong><span>Next up</span></div>
+      <div class="stat"><strong id="stat-week">0</strong><span>Next 7 days</span></div>
+    </div>
+
+    <div class="filters">
+      <div class="chips" id="barber-filter" role="group" aria-label="Barber"></div>
+      <div class="chips" id="view-filter" role="group" aria-label="Show"></div>
+    </div>
+
+    <div id="list"></div>
+  </section>
+</main>
+
+<script>
+// Same URL as BACKEND_URL in the booking page
+const BACKEND_URL = "";
+const BARBERS = ["Brian", "Reezy"];
+const REMINDER_MINUTES = 15;
+
+const $ = (id) => document.getElementById(id);
+const pad = (n) => String(n).padStart(2, "0");
+const isoDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const to12h = (t) => { const [h, m] = t.split(":").map(Number); return `${(h % 12) || 12}:${pad(m)} ${h < 12 ? "AM" : "PM"}`; };
+const longDate = (iso) => new Date(iso + "T00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+const startOf = (b) => new Date(`${b.date}T${b.time}`);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const waNumber = (p) => { let d = String(p).replace(/\D/g, ""); if (d.startsWith("0")) d = "263" + d.slice(1); return d; };
+
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch { /* ignore */ } },
+  del(k) { try { localStorage.removeItem(k); } catch { /* ignore */ } },
+};
+
+let pin = store.get("reezy:pin") || "";
+let bookings = [];
+let barber = store.get("reezy:barber") || "All";
+let view = "upcoming";
+const alerted = new Set();
+let timer = null;
+
+function show(which) {
+  $("not-connected").hidden = which !== "none";
+  $("login").hidden = which !== "login";
+  $("app").hidden = which !== "app";
+  $("logout").hidden = which !== "app";
+}
+
+async function load() {
+  try {
+    const res = await (await fetch(`${BACKEND_URL}?action=list&pin=${encodeURIComponent(pin)}`)).json();
+    if (!res.ok) {
+      if (res.error === "pin") { pin = ""; store.del("reezy:pin"); clearInterval(timer); clearInterval(soonTimer); show("login"); $("login-error").textContent = "That PIN isn't right."; }
+      return false;
+    }
+    bookings = res.bookings;
+    $("updated").textContent = "Updated " + new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    render();
+    return true;
+  } catch {
+    $("updated").textContent = "Couldn't reach the booking system. Retrying…";
+    return false;
+  }
+}
+
+function chips(el, options, current, onPick) {
+  el.innerHTML = options.map(([v, label]) => `<button type="button" class="chip" data-v="${esc(v)}" aria-pressed="${v === current}">${esc(label)}</button>`).join("");
+  el.onclick = (e) => { const b = e.target.closest(".chip"); if (b) onPick(b.dataset.v); };
+}
+
+function render() {
+  chips($("barber-filter"), [["All", "All barbers"], ...BARBERS.map((b) => [b, b])], barber, (v) => { barber = v; store.set("reezy:barber", v); render(); });
+  chips($("view-filter"), [["upcoming", "Upcoming"], ["today", "Today"], ["past", "Past 7 days"]], view, (v) => { view = v; render(); });
+
+  const now = new Date();
+  const today = isoDate(now);
+  const weekEnd = isoDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 7));
+  const mine = bookings.filter((b) => barber === "All" || b.barber === barber);
+  const active = mine.filter((b) => b.status === "booked");
+
+  $("stat-today").textContent = active.filter((b) => b.date === today).length;
+  $("stat-week").textContent = active.filter((b) => b.date >= today && b.date <= weekEnd).length;
+  const next = active.filter((b) => startOf(b) > now).sort((a, b) => startOf(a) - startOf(b))[0];
+  $("stat-next").textContent = next ? (next.date === today ? to12h(next.time) : new Date(next.date + "T00:00").toLocaleDateString("en-GB", { weekday: "short" }) + " " + to12h(next.time)) : "–";
+
+  let shown;
+  if (view === "today") shown = mine.filter((b) => b.date === today);
+  else if (view === "past") shown = mine.filter((b) => startOf(b) < now).reverse();
+  else shown = mine.filter((b) => startOf(b) >= new Date(now - 30 * 60000));
+
+  const groups = new Map();
+  shown.forEach((b) => { if (!groups.has(b.date)) groups.set(b.date, []); groups.get(b.date).push(b); });
+
+  $("list").innerHTML = shown.length ? [...groups].map(([date, items]) => `
+    <section class="day">
+      <h2>${date === today ? "Today · " : ""}${esc(longDate(date))}</h2>
+      <ul class="list">${items.map(itemHtml).join("")}</ul>
+    </section>`).join("") : `<div class="empty">No bookings to show.</div>`;
+
+  checkSoon();
+}
+
+function itemHtml(b) {
+  const mins = (startOf(b) - Date.now()) / 60000;
+  const soon = b.status === "booked" && mins > 0 && mins <= REMINDER_MINUTES;
+  const wa = waNumber(b.phone);
+  const actions = b.status === "booked"
+    ? `<button data-id="${esc(b.id)}" data-s="done">Done</button><button data-id="${esc(b.id)}" data-s="cancelled">Cancel</button>`
+    : `<button data-id="${esc(b.id)}" data-s="booked">Undo</button>`;
+  return `<li class="item is-${esc(b.status)}${soon ? " is-soon" : ""}">
+    <div class="item__time">${esc(to12h(b.time))}</div>
+    <div class="item__main">
+      <div class="item__svc">${esc(b.service)} <span class="pill pill--barber">${esc(b.barber)}</span>${b.status !== "booked" ? ` <span class="pill">${esc(b.status)}</span>` : ""}</div>
+      <div class="item__client">${esc(b.name)} · <a href="tel:${esc(b.phone)}">${esc(b.phone)}</a> · <a href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a></div>
+      ${b.notes ? `<div class="item__notes">${esc(b.notes)}</div>` : ""}
+    </div>
+    <div class="item__actions">${actions}</div>
+  </li>`;
+}
+
+$("list").addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-id]");
+  if (!btn) return;
+  btn.disabled = true;
+  try {
+    const res = await (await fetch(BACKEND_URL, { method: "POST", body: JSON.stringify({ action: "status", pin, id: btn.dataset.id, status: btn.dataset.s }) })).json();
+    if (res.ok) { const b = bookings.find((x) => x.id === btn.dataset.id); if (b) b.status = btn.dataset.s; render(); }
+    else btn.disabled = false;
+  } catch { btn.disabled = false; }
+});
+
+// Bookings starting within 15 minutes: banner on the page, plus a sound and phone notification when alerts are on
+function checkSoon() {
+  const now = Date.now();
+  const soon = bookings
+    .filter((b) => b.status === "booked" && (barber === "All" || b.barber === barber))
+    .map((b) => ({ b, mins: Math.ceil((startOf(b) - now) / 60000) }))
+    .filter(({ mins }) => mins > 0 && mins <= REMINDER_MINUTES)
+    .sort((a, b) => a.mins - b.mins);
+  $("soon").hidden = !soon.length;
+  $("soon").innerHTML = soon.map(({ b, mins }) =>
+    `<strong>In ${mins} min: ${esc(b.service)} with ${esc(b.barber)}</strong><span>${esc(to12h(b.time))} · ${esc(b.name)} · ${esc(b.phone)}</span>`).join("");
+  soon.forEach(({ b, mins }) => {
+    if (alerted.has(b.id)) return;
+    alerted.add(b.id);
+    beep();
+    try {
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(`Booking in ${mins} min`, { body: `${b.service} with ${b.barber} · ${b.name}`, icon: "assets/logo.jpeg" });
+      }
+    } catch { /* notifications unsupported */ }
+  });
+}
+
+let audio = null;
+function beep() {
+  try {
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    [0, 0.35].forEach((t) => {
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.frequency.value = 880; g.gain.value = 0.15;
+      o.connect(g); g.connect(audio.destination);
+      o.start(audio.currentTime + t); o.stop(audio.currentTime + t + 0.2);
+    });
+  } catch { /* sound unavailable */ }
+}
+
+$("alerts").addEventListener("click", async () => {
+  beep(); // also unlocks sound on phones
+  try {
+    if ("Notification" in window) {
+      const p = await Notification.requestPermission();
+      $("alerts").textContent = p === "granted" ? "Alerts on" : "Sound alerts on";
+    } else $("alerts").textContent = "Sound alerts on";
+  } catch { $("alerts").textContent = "Sound alerts on"; }
+});
+
+$("refresh").addEventListener("click", load);
+
+$("login").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  pin = $("pin").value.trim();
+  if (!pin) return;
+  $("login-error").textContent = "";
+  $("login-btn").disabled = true;
+  const ok = await load();
+  $("login-btn").disabled = false;
+  if (ok) { store.set("reezy:pin", pin); start(); }
+});
+
+$("logout").addEventListener("click", () => {
+  pin = ""; store.del("reezy:pin"); clearInterval(timer); $("pin").value = ""; show("login");
+});
+
+let soonTimer = null;
+function start() {
+  show("app");
+  clearInterval(timer); clearInterval(soonTimer);
+  timer = setInterval(load, 60000);          // refresh bookings every minute
+  soonTimer = setInterval(checkSoon, 20000); // keep "in X min" alerts current
+}
+
+if (!BACKEND_URL) show("none");
+else if (pin) { start(); load(); }
+else show("login");
+</script>
+</body>
+</html>
