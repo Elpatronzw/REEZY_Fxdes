@@ -10,8 +10,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+/* Layout: phone-first. Sticky top bar, summary, two full-width filter tabs, then one card per booking. */
 :root {
-  --black: #0a0a0a; --ink: #141414; --white: #ffffff; --grey: #8f8f8f; --grey-dark: #6b6b6b;
+  --black: #0a0a0a; --card: #121212; --white: #ffffff; --grey: #9a9a9a; --grey-dark: #6b6b6b;
   --line: #262626; --alert: #ffd84d; --error: #ff6b6b;
   --display: "Bebas Neue", Impact, "Arial Narrow", sans-serif;
   --body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -19,78 +20,120 @@
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { margin: 0; background: var(--black); color: var(--white); font: 16px/1.5 var(--body); }
-.wrap { max-width: 900px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { margin: 0; background: var(--black); color: var(--white); font: 15px/1.45 var(--body); -webkit-tap-highlight-color: transparent; }
+.wrap { max-width: 720px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 h1, h2, h3 { font-family: var(--display); font-weight: 400; letter-spacing: 0.04em; line-height: 1; margin: 0; }
 p { margin: 0; }
 .muted { color: var(--grey); }
 a { color: inherit; }
 button, input { font: inherit; }
-:focus-visible { outline: 2px solid var(--white); outline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--white); outline-offset: 2px; }
+svg { display: block; }
 
-.top { border-bottom: 1px solid var(--line); }
-.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 0.8rem; }
-.brand { display: flex; align-items: center; gap: 0.7rem; text-decoration: none; font-family: var(--display); font-size: 1.5rem; letter-spacing: 0.06em; }
-.brand img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; object-position: 50% 35%; background: var(--white); }
-.brand span { color: var(--grey); font-size: 1.1rem; }
+/* Top bar */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); background: var(--black); z-index: 10; }
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: rgba(10,10,10,0.94); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; padding-block: 0.6rem; }
+.brand { display: flex; align-items: center; gap: 0.6rem; min-width: 0; text-decoration: none; font-family: var(--display); font-size: 1.35rem; letter-spacing: 0.06em; white-space: nowrap; }
+.brand img { width: 34px; height: 34px; flex: none; border-radius: 50%; object-fit: cover; object-position: 50% 35%; background: var(--white); }
+.brand span { color: var(--grey); }
+.top__btns { display: flex; gap: 0.4rem; flex: none; }
+.icon-btn {
+  width: 40px; height: 40px; display: grid; place-items: center; padding: 0;
+  border: 1px solid var(--line); background: transparent; color: var(--white); cursor: pointer;
+}
+.icon-btn.is-on { background: var(--white); color: var(--black); border-color: var(--white); }
+.icon-btn.is-spinning svg { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .icon-btn.is-spinning svg { animation: none; } }
 
-.btn { display: inline-block; padding: 0.7rem 1.2rem; border: 1px solid var(--white); background: var(--white); color: var(--black); font: 600 0.75rem var(--body); text-transform: uppercase; letter-spacing: 0.15em; cursor: pointer; text-decoration: none; }
-.btn--ghost { background: transparent; color: var(--white); border-color: var(--line); }
-.btn--ghost:hover { border-color: var(--white); }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 1.2rem; border: 1px solid var(--white); background: var(--white); color: var(--black); font: 600 0.8rem var(--body); text-transform: uppercase; letter-spacing: 0.12em; cursor: pointer; text-decoration: none; }
 .btn:disabled { opacity: 0.5; cursor: default; }
 
-main { padding-block: 2rem 4rem; display: grid; gap: 1.5rem; }
-.login { max-width: 360px; display: grid; gap: 1rem; padding-top: 2rem; }
-.login h1 { font-size: 3rem; }
-.login input { padding: 0.85rem 1rem; border: 1px solid var(--white); background: var(--black); color: var(--white); font-size: 1.2rem; letter-spacing: 0.2em; }
-.error { color: var(--error); min-height: 1.5em; font-size: 0.9rem; }
+main { padding-block: 1.25rem 3rem; }
 
-.head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 1rem; }
-.head h1 { font-size: clamp(2.5rem, 7vw, 3.5rem); }
-.head__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; font-size: 0.85rem; }
+/* Login */
+.login { max-width: 360px; margin: 0 auto; display: grid; gap: 0.9rem; padding-top: 2.5rem; }
+.login h1 { font-size: 2.6rem; }
+.login label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.15em; }
+/* 16px+ input text stops iPhones zooming in when the field is tapped */
+.login input { min-height: 52px; padding: 0 1rem; border: 1px solid var(--white); background: var(--black); color: var(--white); font-size: 1.25rem; letter-spacing: 0.3em; }
+.error { color: var(--error); min-height: 1.4em; font-size: 0.9rem; }
 
-.alert { background: var(--alert); color: var(--black); padding: 1rem 1.25rem; display: grid; gap: 0.25rem; }
-.alert strong { font-family: var(--display); font-weight: 400; font-size: 1.6rem; letter-spacing: 0.04em; }
+/* Bookings screen */
+.app { display: grid; gap: 1rem; }
+.head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
+.head h1 { font-size: 2.4rem; }
+.updated { font-size: 0.8rem; text-align: right; }
 
-.filters { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; }
-.chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-.chip { padding: 0.45rem 0.9rem; border: 1px solid var(--line); background: transparent; color: var(--grey); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; }
-.chip[aria-pressed="true"] { background: var(--white); color: var(--black); border-color: var(--white); }
+.alert { background: var(--alert); color: var(--black); padding: 0.85rem 1rem; display: grid; gap: 0.6rem; }
+.alert__row { display: grid; gap: 0.1rem; }
+.alert strong { font-family: var(--display); font-weight: 400; font-size: 1.45rem; letter-spacing: 0.04em; line-height: 1.05; }
+.alert span { font-size: 0.85rem; }
 
-.stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); }
-.stat { padding: 0.9rem 1rem; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); background: var(--card); }
+.stat { padding: 0.7rem 0.75rem; min-width: 0; }
 .stat + .stat { border-left: 1px solid var(--line); }
-.stat strong { display: block; font-family: var(--display); font-weight: 400; font-size: 2.2rem; line-height: 1; font-variant-numeric: tabular-nums; }
-.stat span { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--grey); }
+.stat strong { display: block; font-family: var(--display); font-weight: 400; font-size: 1.7rem; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.stat span { display: block; margin-top: 0.25rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--grey); }
 
-.day h2 { font-size: 1.6rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--white); margin-bottom: 0.25rem; }
-.list { list-style: none; margin: 0; padding: 0; }
-.item { display: grid; grid-template-columns: 5.5rem 1fr auto; gap: 0.25rem 1rem; align-items: start; padding: 1rem 0; border-bottom: 1px solid var(--line); }
-.item__time { font-family: var(--display); font-size: 1.8rem; line-height: 1; font-variant-numeric: tabular-nums; }
-.item__main { min-width: 0; display: grid; gap: 0.2rem; }
-.item__svc { font-weight: 600; }
-.item__client a { color: var(--grey); }
-.item__notes { color: var(--grey); font-size: 0.9rem; overflow-wrap: anywhere; }
-.item__actions { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
-.item__actions button { padding: 0.35rem 0.7rem; border: 1px solid var(--line); background: none; color: var(--white); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; }
-.item__actions button:hover { border-color: var(--white); }
+.filters { display: grid; gap: 0.5rem; }
+/* Filter tabs: equal-width segments */
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); border: 1px solid var(--line); }
+.chip { min-height: 42px; padding: 0 0.4rem; border: 0; background: transparent; color: var(--grey); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip + .chip { border-left: 1px solid var(--line); }
+.chip[aria-pressed="true"] { background: var(--white); color: var(--black); }
+
+/* Day groups and booking cards */
+.day { display: grid; gap: 0.6rem; }
+.day + .day { margin-top: 0.75rem; }
+.day h2 {
+  position: sticky; top: calc(57px + env(safe-area-inset-top, 0px)); z-index: 5;
+  background: var(--black); padding: 0.6rem 0 0.4rem; font-size: 1.35rem; border-bottom: 1px solid var(--line);
+}
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; }
+.item { background: var(--card); border: 1px solid var(--line); padding: 0.85rem 0.9rem; display: grid; gap: 0.4rem; min-width: 0; }
+.item__top { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.item__time { font-family: var(--display); font-size: 1.75rem; line-height: 1; font-variant-numeric: tabular-nums; margin-right: auto; }
+.item__svc { font-weight: 600; overflow-wrap: anywhere; }
+.item__client { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; }
+.item__name { font-weight: 500; }
+.item__phone { color: var(--grey); font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.item__notes { color: var(--grey); font-size: 0.9rem; overflow-wrap: anywhere; border-left: 2px solid var(--line); padding-left: 0.6rem; }
+.item__contact { display: flex; gap: 0.4rem; }
+.mini {
+  display: inline-flex; align-items: center; gap: 0.35rem; min-height: 36px; padding: 0 0.75rem;
+  border: 1px solid var(--line); color: var(--white); text-decoration: none; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+}
+.item__actions { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0.5rem; margin-top: 0.2rem; }
+.item__actions button, .item__actions .tell {
+  min-height: 44px; padding: 0 0.5rem; display: flex; align-items: center; justify-content: center; text-align: center;
+  border: 1px solid var(--line); background: transparent; color: var(--white); text-decoration: none;
+  font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer;
+}
+.item__actions button[data-s="done"] { background: var(--white); color: var(--black); border-color: var(--white); }
 .item__actions button.is-armed { background: var(--error); border-color: var(--error); color: var(--black); }
-.item__actions .tell { padding: 0.35rem 0.7rem; background: var(--white); color: var(--black); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; text-decoration: none; }
+.item__actions .tell { background: var(--white); color: var(--black); border-color: var(--white); }
+.item__actions:has(.tell) { grid-auto-columns: auto; grid-template-columns: 1fr auto; }
 .item__msg { font-size: 0.85rem; color: var(--alert); }
 .item__msg:empty { display: none; }
+.pill { display: inline-block; padding: 0.15rem 0.5rem; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; border: 1px solid var(--line); color: var(--grey); white-space: nowrap; }
+.pill--barber { color: var(--black); background: var(--white); border-color: var(--white); }
 .pill--cancelled { color: var(--error); border-color: var(--error); }
-.pill { display: inline-block; padding: 0.1rem 0.5rem; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; border: 1px solid var(--line); color: var(--grey); }
-.pill--barber { color: var(--white); border-color: var(--white); }
-.item.is-done { opacity: 0.45; }
-.item.is-cancelled .item__time, .item.is-cancelled .item__main { opacity: 0.55; }
-.item.is-cancelled .item__time { text-decoration: line-through; }
-.item.is-soon { background: rgba(255, 216, 77, 0.08); box-shadow: inset 3px 0 0 var(--alert); padding-left: 0.75rem; }
-.empty { border: 1px dashed var(--line); padding: 2rem; text-align: center; color: var(--grey); }
+.item.is-done { opacity: 0.5; }
+.item.is-cancelled .item__time { text-decoration: line-through; color: var(--grey); }
+.item.is-cancelled .item__svc, .item.is-cancelled .item__client { opacity: 0.6; }
+.item.is-soon { border-color: var(--alert); box-shadow: inset 4px 0 0 var(--alert); }
+.empty { border: 1px dashed var(--line); padding: 2rem 1rem; text-align: center; color: var(--grey); }
 
-@media (max-width: 600px) {
+@media (max-width: 420px) {
   .brand span { display: none; }
-  .item { grid-template-columns: 4.5rem 1fr; }
-  .item__actions { grid-column: 2; justify-content: flex-start; }
+}
+@media (min-width: 640px) {
+  body { font-size: 16px; }
+  .head h1 { font-size: 3rem; }
+  .filters { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 }
 </style>
 </head>
@@ -98,8 +141,18 @@ main { padding-block: 2rem 4rem; display: grid; gap: 1.5rem; }
 
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="./"><img src="assets/logo.jpeg" alt="">Reezy Fxdes <span>/ Barbers' portal</span></a>
-    <button class="btn btn--ghost" id="logout" hidden>Log out</button>
+    <a class="brand" href="./"><img src="assets/logo.jpeg" alt="">Reezy Fxdes <span>/ Portal</span></a>
+    <div class="top__btns" id="top-btns" hidden>
+      <button class="icon-btn" id="refresh" aria-label="Refresh bookings" title="Refresh">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg>
+      </button>
+      <button class="icon-btn" id="alerts" aria-label="Turn on booking alerts" title="Turn on alerts">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      </button>
+      <button class="icon-btn" id="logout" aria-label="Log out" title="Log out">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      </button>
+    </div>
   </div>
 </header>
 
@@ -117,14 +170,10 @@ main { padding-block: 2rem 4rem; display: grid; gap: 1.5rem; }
     <p class="error" id="login-error" role="alert"></p>
   </form>
 
-  <section id="app" hidden>
+  <section id="app" class="app" hidden>
     <div class="head">
       <h1>Bookings</h1>
-      <div class="head__meta">
-        <span class="muted" id="updated">Loading…</span>
-        <button class="btn btn--ghost" id="refresh">Refresh</button>
-        <button class="btn btn--ghost" id="alerts">Turn on alerts</button>
-      </div>
+      <p class="updated muted" id="updated">Loading…</p>
     </div>
 
     <div class="alert" id="soon" hidden role="status"></div>
@@ -136,8 +185,8 @@ main { padding-block: 2rem 4rem; display: grid; gap: 1.5rem; }
     </div>
 
     <div class="filters">
-      <div class="chips" id="barber-filter" role="group" aria-label="Barber"></div>
-      <div class="chips" id="view-filter" role="group" aria-label="Show"></div>
+      <div class="seg" id="barber-filter" role="group" aria-label="Barber"></div>
+      <div class="seg" id="view-filter" role="group" aria-label="Show"></div>
     </div>
 
     <div id="list"></div>
@@ -178,7 +227,7 @@ function show(which) {
   $("not-connected").hidden = which !== "none";
   $("login").hidden = which !== "login";
   $("app").hidden = which !== "app";
-  $("logout").hidden = which !== "app";
+  $("top-btns").hidden = which !== "app";
 }
 
 async function load() {
@@ -204,8 +253,8 @@ function chips(el, options, current, onPick) {
 }
 
 function render() {
-  chips($("barber-filter"), [["All", "All barbers"], ...BARBERS.map((b) => [b, b])], barber, (v) => { barber = v; store.set("reezy:barber", v); render(); });
-  chips($("view-filter"), [["upcoming", "Upcoming"], ["today", "Today"], ["past", "Past 7 days"]], view, (v) => { view = v; render(); });
+  chips($("barber-filter"), [["All", "All"], ...BARBERS.map((b) => [b, b])], barber, (v) => { barber = v; store.set("reezy:barber", v); render(); });
+  chips($("view-filter"), [["upcoming", "Upcoming"], ["today", "Today"], ["past", "Past"]], view, (v) => { view = v; render(); });
 
   const now = new Date();
   const today = isoDate(now);
@@ -216,7 +265,7 @@ function render() {
   $("stat-today").textContent = active.filter((b) => b.date === today).length;
   $("stat-week").textContent = active.filter((b) => b.date >= today && b.date <= weekEnd).length;
   const next = active.filter((b) => startOf(b) > now).sort((a, b) => startOf(a) - startOf(b))[0];
-  $("stat-next").textContent = next ? (next.date === today ? to12h(next.time) : new Date(next.date + "T00:00").toLocaleDateString("en-GB", { weekday: "short" }) + " " + to12h(next.time)) : "–";
+  $("stat-next").textContent = next ? (next.date === today ? to12h(next.time) : new Date(next.date + "T00:00").toLocaleDateString("en-GB", { weekday: "short" }) + " " + to12h(next.time).replace(" ", "")) : "–";
 
   let shown;
   if (view === "today") shown = mine.filter((b) => b.date === today);
@@ -228,7 +277,7 @@ function render() {
 
   $("list").innerHTML = shown.length ? [...groups].map(([date, items]) => `
     <section class="day">
-      <h2>${date === today ? "Today · " : ""}${esc(longDate(date))}</h2>
+      <h2>${date === today ? "Today · " : ""}${esc(shortDate(date))}</h2>
       <ul class="list">${items.map(itemHtml).join("")}</ul>
     </section>`).join("") : `<div class="empty">No bookings to show.</div>`;
 
@@ -236,6 +285,9 @@ function render() {
 }
 
 const STATUS_LABEL = { done: "Done", cancelled: "Barber cancelled" };
+const shortDate = (iso) => new Date(iso + "T00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+const ICON_CALL = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>`;
+const ICON_CHAT = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/></svg>`;
 
 // Ready-made WhatsApp message telling the client their booking was cancelled
 function cancelMessageLink(b) {
@@ -255,13 +307,19 @@ function itemHtml(b) {
       ? `<a class="tell" href="${esc(cancelMessageLink(b))}" target="_blank" rel="noopener">Tell client on WhatsApp</a><button data-id="${id}" data-s="booked">Undo</button>`
       : `<button data-id="${id}" data-s="booked">Undo</button>`;
   return `<li class="item is-${esc(b.status)}${soon ? " is-soon" : ""}" data-item="${id}">
-    <div class="item__time">${esc(to12h(b.time))}</div>
-    <div class="item__main">
-      <div class="item__svc">${esc(b.service)} <span class="pill pill--barber">${esc(b.barber)}</span>${STATUS_LABEL[b.status] ? ` <span class="pill pill--${esc(b.status)}">${STATUS_LABEL[b.status]}</span>` : ""}</div>
-      <div class="item__client">${esc(b.name)} · <a href="tel:${esc(b.phone)}">${esc(b.phone)}</a> · <a href="https://wa.me/${wa}" target="_blank" rel="noopener">WhatsApp</a></div>
-      ${b.notes ? `<div class="item__notes">${esc(b.notes)}</div>` : ""}
-      <div class="item__msg" role="status"></div>
+    <div class="item__top">
+      <span class="item__time">${esc(to12h(b.time))}</span>
+      ${STATUS_LABEL[b.status] ? `<span class="pill pill--${esc(b.status)}">${STATUS_LABEL[b.status]}</span>` : ""}
+      <span class="pill pill--barber">${esc(b.barber)}</span>
     </div>
+    <p class="item__svc">${esc(b.service)}</p>
+    <div class="item__client"><span class="item__name">${esc(b.name)}</span><span class="item__phone">${esc(b.phone)}</span></div>
+    ${b.notes ? `<p class="item__notes">${esc(b.notes)}</p>` : ""}
+    <div class="item__contact">
+      <a class="mini" href="tel:${esc(b.phone)}">${ICON_CALL}Call</a>
+      <a class="mini" href="https://wa.me/${wa}" target="_blank" rel="noopener">${ICON_CHAT}WhatsApp</a>
+    </div>
+    <p class="item__msg" role="status"></p>
     <div class="item__actions">${actions}</div>
   </li>`;
 }
@@ -311,7 +369,7 @@ function checkSoon() {
     .sort((a, b) => a.mins - b.mins);
   $("soon").hidden = !soon.length;
   $("soon").innerHTML = soon.map(({ b, mins }) =>
-    `<strong>In ${mins} min: ${esc(b.service)} with ${esc(b.barber)}</strong><span>${esc(to12h(b.time))} · ${esc(b.name)} · ${esc(b.phone)}</span>`).join("");
+    `<div class="alert__row"><strong>In ${mins} min · ${esc(b.barber)}</strong><span>${esc(to12h(b.time))} · ${esc(b.service)} · ${esc(b.name)}</span></div>`).join("");
   soon.forEach(({ b, mins }) => {
     if (alerted.has(b.id)) return;
     alerted.add(b.id);
@@ -339,15 +397,22 @@ function beep() {
 
 $("alerts").addEventListener("click", async () => {
   beep(); // also unlocks sound on phones
+  const btn = $("alerts");
+  btn.classList.add("is-on");
+  let label = "Sound alerts on";
   try {
-    if ("Notification" in window) {
-      const p = await Notification.requestPermission();
-      $("alerts").textContent = p === "granted" ? "Alerts on" : "Sound alerts on";
-    } else $("alerts").textContent = "Sound alerts on";
-  } catch { $("alerts").textContent = "Sound alerts on"; }
+    if ("Notification" in window && (await Notification.requestPermission()) === "granted") label = "Alerts on";
+  } catch { /* notifications unsupported: sound only */ }
+  btn.setAttribute("aria-label", label);
+  btn.title = label;
+  $("updated").textContent = label;
 });
 
-$("refresh").addEventListener("click", load);
+$("refresh").addEventListener("click", async () => {
+  $("refresh").classList.add("is-spinning");
+  await load();
+  $("refresh").classList.remove("is-spinning");
+});
 
 $("login").addEventListener("submit", async (e) => {
   e.preventDefault();
