@@ -8,19 +8,8 @@
  * - Gives the barbers' portal the list of bookings (protected by a PIN)
  *
  * Setup steps are in backend/SETUP.md.
+ * Settings (PIN, phones, emails) live in the separate "Settings" file (backend/Settings.gs).
  */
-
-// ==== Fill these in ====
-const PORTAL_PIN = "CHANGE-ME";            // PIN the barbers type to open the portal
-const SHOP_PHONES = [
-  // CallMeBot API keys: each number gets its own key (see SETUP.md). Leave "" to skip that number.
-  { phone: "+263719515630", apikey: "" },
-  { phone: "+263782807245", apikey: "" },
-];
-// Email addresses that also get new-booking alerts and reminders (Gmail notifies the phone).
-// Example: ["reezy@gmail.com", "brian@gmail.com"]. Leave [] for no emails.
-const ALERT_EMAILS = [];
-// ==== End of settings ====
 
 const SHEET_NAME = "Bookings";
 const HEADERS = ["id", "createdAt", "date", "time", "barber", "service", "name", "phone", "notes", "status", "reminded"];
@@ -119,10 +108,34 @@ function listBookings_() {
 
 function setStatus_(id, status) {
   if (["booked", "done", "cancelled"].indexOf(status) < 0) return { ok: false, error: "invalid" };
-  const row = rows_().filter((r) => r.id === String(id))[0];
-  if (!row) return { ok: false, error: "not_found" };
-  sheet_().getRange(row._row, HEADERS.indexOf("status") + 1).setValue(status);
-  return { ok: true };
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const all = rows_();
+    const row = all.filter((r) => r.id === String(id))[0];
+    if (!row) return { ok: false, error: "not_found" };
+    const prev = row.status;
+    if (prev === status) return { ok: true };
+
+    // Restoring a cancelled booking: only if nobody else has taken that time since
+    if (status === "booked" && prev === "cancelled") {
+      const taken = all.some((r) => r.id !== row.id && r.status !== "cancelled" &&
+        r.date === row.date && r.time === row.time && r.barber === row.barber);
+      if (taken) return { ok: false, error: "taken" };
+    }
+
+    sheet_().getRange(row._row, HEADERS.indexOf("status") + 1).setValue(status);
+    SpreadsheetApp.flush();
+
+    const what = row.service + " with " + row.barber + "\n" +
+      prettyDate_(row.date) + " at " + pretty12h_(row.time) + "\n" +
+      "Client: " + row.name + " (" + row.phone + ")";
+    if (status === "cancelled") notify_("*Barber cancelled - Reezy Fxdes*\n" + what + "\nThis time is free again on the website.");
+    if (status === "booked" && prev === "cancelled") notify_("*Booking restored - Reezy Fxdes*\n" + what);
+    return { ok: true };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // ---------- Reminders (runs every 5 minutes, see setup()) ----------

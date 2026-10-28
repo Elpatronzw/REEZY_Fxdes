@@ -562,27 +562,27 @@ $("barbers").addEventListener("click", (e) => {
   renderBarbers();
   renderSlots();
   update();
+  loadBackendSlots(state.date);
 });
 
-// Time dropdown: 30-minute steps from opening; the chosen barber's booked times can't be picked
+// Time dropdown: 30-minute steps from opening. Only the chosen barber's free times are listed.
 function renderSlots() {
   const sel = $("time");
   sel.innerHTML = "";
   const first = new Option("", "");
   sel.add(first);
   if (!state.date) { first.text = "Pick a day first"; return; }
-  const slots = slotsFor(state.date);
-  if (!slots.length) { first.text = "No times left on this day"; return; }
-  first.text = state.barber ? "Choose a time" : "Choose a time (pick a barber to see their free times)";
-  slots.forEach((t) => {
-    const taken = isTaken(state.date, t);
-    const opt = new Option(taken ? `${to12h(t)} (booked)` : to12h(t), t);
-    opt.disabled = taken;
-    sel.add(opt);
-  });
-  if (state.time && (isTaken(state.date, state.time) || !slots.includes(state.time))) state.time = "";
+  if (!state.barber) { first.text = "Pick a barber first"; state.time = ""; return; }
+  const free = slotsFor(state.date).filter((t) => !isTaken(state.date, t));
+  if (!free.length) { first.text = `${state.barber} is fully booked on this day`; state.time = ""; return; }
+  first.text = "Choose a time";
+  free.forEach((t) => sel.add(new Option(to12h(t), t)));
+  if (state.time && !free.includes(state.time)) state.time = "";
   sel.value = state.time;
 }
+
+// Keep free times current while the page is open (other clients book, barbers cancel)
+setInterval(() => { if ($("done").hidden) loadBackendSlots(state.date); }, 60000);
 
 // Booked times from the backend, for one day (all barbers). No client details are returned.
 async function loadBackendSlots(date) {

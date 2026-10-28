@@ -12,7 +12,8 @@ You need a Google account and the two shop phones.
 1. Go to https://sheets.new and name the sheet **Reezy Fxdes Bookings**.
 2. Click **Extensions → Apps Script**.
 3. Delete the code there and paste everything from `backend/Code.gs`.
-4. At the top, change `PORTAL_PIN` to a PIN the barbers will use, e.g. `"4821"`.
+   Then click **+ → Script**, name the new file **Settings**, and paste everything from `backend/Settings.gs`.
+4. In **Settings**, change `PORTAL_PIN` to a PIN the barbers will use, e.g. `"4821"`.
    Keep the real PIN only in Google, never in the GitHub repo.
 
 ## 2. Get a WhatsApp key for each shop number (CallMeBot)
@@ -21,7 +22,7 @@ Do this on **each** phone (+263 71 951 5630 and +263 78 280 7245):
    CallMeBot WhatsApp number shown there in your contacts.
 2. Send it this message on WhatsApp: `I allow callmebot to send me messages`
 3. You'll get a reply with your **apikey**.
-4. Paste each key into `SHOP_PHONES` in the script, next to the right number.
+4. Paste each key into `SHOP_PHONES` in the **Settings** file, next to the right number.
 
 ## 3. Turn it on
 1. Click the save icon.
@@ -39,7 +40,7 @@ Do this on **each** phone (+263 71 951 5630 and +263 78 280 7245):
    run `sh build-site.sh`, then commit and push).
 
 ## Later changes to the script
-After editing the script, use **Deploy → Manage deployments → Edit (pencil) → Version: New version → Deploy**.
+After replacing the **Code** file with a new version (Settings stays as it is), use **Deploy → Manage deployments → Edit (pencil) → Version: New version → Deploy**.
 The URL stays the same.
 
 ## Notes
