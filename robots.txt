@@ -1,0 +1,3 @@
+User-agent: *
+Disallow: /portal.html
+Sitemap: https://elpatronzw.github.io/REEZY_Fxdes/sitemap.xml
