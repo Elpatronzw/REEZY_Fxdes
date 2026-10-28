@@ -17,6 +17,9 @@ const SHOP_PHONES = [
   { phone: "+263719515630", apikey: "" },
   { phone: "+263782807245", apikey: "" },
 ];
+// Email addresses that also get new-booking alerts and reminders (Gmail notifies the phone).
+// Example: ["reezy@gmail.com", "brian@gmail.com"]. Leave [] for no emails.
+const ALERT_EMAILS = [];
 // ==== End of settings ====
 
 const SHEET_NAME = "Bookings";
@@ -150,13 +153,17 @@ function setup() {
     .filter((t) => t.getHandlerFunction() === "sendReminders")
     .forEach((t) => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger("sendReminders").timeBased().everyMinutes(5).create();
-  // Also checks that WhatsApp alerts work
-  notify_("Reezy Fxdes bookings are connected. You'll get booking alerts and reminders here.");
+  // Also checks that WhatsApp / email alerts work
+  notify_("*Reezy Fxdes bookings are connected*\nYou'll get booking alerts and reminders here.");
 }
 
 // ---------- Helpers ----------
 
 function notify_(text) {
+  if (ALERT_EMAILS.length) {
+    const subject = text.split("\n")[0].replace(/\*/g, "");
+    try { MailApp.sendEmail(ALERT_EMAILS.join(","), subject, text.replace(/\*/g, "")); } catch (err) { console.log(err); }
+  }
   SHOP_PHONES.forEach((p) => {
     if (!p.apikey) return;
     const url = "https://api.callmebot.com/whatsapp.php?phone=" + encodeURIComponent(p.phone) +

@@ -428,7 +428,8 @@ const SHOP_NAME = "Reezy Fxdes / VIP Classic Barbershop";
 const BARBERS = ["Brian", "Reezy"];
 // Booking backend: the Google Apps Script web app URL (see backend/SETUP.md).
 // Empty = bookings are sent by WhatsApp only, with no portal or reminders.
-const BACKEND_URL = "";
+// The Claude demo page cannot reach Google, so it stays on the WhatsApp-only flow.
+const BACKEND_URL = window.claude ? "" : "https://script.google.com/macros/s/AKfycbzcOgP2GrweLuP1FigC4o43Knu_ZRdmL_4yKzIONT617YdVdZlv6OtuzDCqZVZgeNah/exec";
 // Prices from the shop's price list (effective 20 October)
 const SERVICES = [
   { group: "Gents", name: "Fade", price: 5 },
