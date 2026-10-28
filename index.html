@@ -190,8 +190,20 @@ p { margin: 0; }
 .summary__text { font-family: var(--display); font-size: 1.6rem; letter-spacing: 0.04em; min-width: 0; }
 .error { color: var(--error); font-size: 0.9rem; min-height: 1.4em; }
 
-.done { border: 1px solid var(--black); padding: 2rem; display: grid; gap: 1rem; }
-.done h3 { font-size: 2.2rem; }
+.done { border: 1px solid var(--black); padding: 2rem; display: grid; gap: 1.25rem; max-width: 46rem; }
+.done h3 { font-size: clamp(2.2rem, 6vw, 3rem); }
+.done__head { display: flex; align-items: center; gap: 1rem; }
+.done__head .eyebrow { margin-bottom: 0.3rem; }
+.done__check {
+  flex: none; width: 3.2rem; height: 3.2rem; border-radius: 50%;
+  display: grid; place-items: center; background: var(--black); color: var(--white); font-size: 1.6rem;
+}
+.ticket { margin: 0; display: grid; grid-template-columns: auto 1fr; border: 1px dashed var(--black); }
+.ticket dt, .ticket dd { margin: 0; padding: 0.7rem 1rem; border-bottom: 1px dashed var(--line-light); }
+.ticket dt { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: var(--grey-dark); align-self: center; }
+.ticket dd { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.ticket dt:nth-last-of-type(1), .ticket dd:last-of-type { border-bottom: 0; }
+.done__info ul { margin: 0.4rem 0 0; padding-left: 1.2rem; color: var(--grey-dark); display: grid; gap: 0.25rem; }
 .done__actions { display: flex; gap: 1rem; flex-wrap: wrap; }
 .done__actions .btn--ghost { color: var(--black); border-color: var(--black); }
 .done__actions .btn--ghost:hover { background: var(--black); color: var(--white); }
@@ -373,11 +385,27 @@ p { margin: 0; }
       </form>
 
       <div class="done" id="done" hidden>
-        <p class="eyebrow" id="done-eyebrow">Almost done</p>
-        <h3 id="done-title">Booking ready</h3>
+        <div class="done__head">
+          <span class="done__check" aria-hidden="true">✓</span>
+          <div>
+            <p class="eyebrow" id="done-eyebrow">Almost done</p>
+            <h3 id="done-title">Booking ready</h3>
+          </div>
+        </div>
         <p id="done-text"></p>
+        <dl class="ticket" id="done-details"></dl>
+        <div class="done__info" id="done-info">
+          <p class="label">Good to know</p>
+          <ul>
+            <li>Please arrive 5 minutes before your time.</li>
+            <li>Booked clients are served before walk-ins.</li>
+            <li>Dye must be washed and shampooed at the barbershop.</li>
+            <li>Need to change or cancel? Message us on WhatsApp.</li>
+          </ul>
+        </div>
         <div class="done__actions">
           <a id="done-retry" class="btn btn--dark" href="#book" target="_blank" rel="noopener">Open WhatsApp again</a>
+          <a id="done-calendar" class="btn btn--ghost" href="#book" download="reezy-fxdes-booking.ics" hidden>Add to calendar</a>
           <button type="button" class="btn btn--ghost" id="done-new">Make another booking</button>
         </div>
       </div>
@@ -641,21 +669,55 @@ function update() {
   if (ready) $("form-error").textContent = "";
 }
 
+const ADDRESS = "Senga, KMP Bluetuckshops";
 const DONE_TEXT = {
-  whatsapp: ["Almost done", "WhatsApp opened in a new tab with your booking filled in. Press send in WhatsApp so Reezy receives it. Reezy will reply to confirm.", "Open WhatsApp again"],
-  saved: ["Booked", "Your booking is saved and the barbers have been notified. Please arrive a few minutes before your time.", "Message the shop on WhatsApp"],
-  fallback: ["One more step", "We couldn't save your booking online. Tap below to send it to Reezy on WhatsApp instead.", "Send booking on WhatsApp"],
+  // [eyebrow, title, text, main button]
+  whatsapp: ["Almost done", "One last tap", "WhatsApp opened in a new tab with your booking filled in. Press send in WhatsApp so Reezy receives it. Reezy will reply to confirm.", "Open WhatsApp again"],
+  saved: ["Booking confirmed", "Thank you, {name}!", "Thank you for booking with Reezy Fxdes / VIP Classic Barbershop. Your chair is reserved and your barber has been notified. We look forward to seeing you.", "Message us on WhatsApp"],
+  fallback: ["One more step", "Almost there, {name}", "We couldn't save your booking online. Tap below to send it to Reezy on WhatsApp instead.", "Send booking on WhatsApp"],
 };
 function showDone(mode) {
-  const [eyebrow, text, retry] = DONE_TEXT[mode];
+  const [eyebrow, title, text, retry] = DONE_TEXT[mode];
+  const first = field("name").split(" ")[0] || "friend";
   $("done-eyebrow").textContent = eyebrow;
-  $("done-title").textContent = `${state.service} · ${state.barber} · ${longDate(state.date)} · ${to12h(state.time)}`;
+  $("done-title").textContent = title.replace("{name}", first);
   $("done-text").textContent = text;
+  const rows = [
+    ["Service", state.service], ["Barber", state.barber],
+    ["Date", longDate(state.date)], ["Time", to12h(state.time)], ["Where", ADDRESS],
+  ];
+  $("done-details").innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("");
+  $("done-info").hidden = mode !== "saved";
+  $("done").querySelector(".done__check").textContent = mode === "saved" ? "✓" : "!";
   $("done-retry").textContent = retry;
-  $("done-retry").href = waLink();
+  // After a saved booking, the WhatsApp button opens a plain chat; otherwise it carries the booking
+  $("done-retry").href = mode === "saved" ? `https://wa.me/${WHATSAPP_NUMBER}` : waLink();
+  const cal = calendarLink(mode);
+  $("done-calendar").hidden = !cal;
+  if (cal) $("done-calendar").href = cal;
   $("booking-form").hidden = true;
+  $("rebook").hidden = true;
   $("done").hidden = false;
-  renderRebook();
+  $("done").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// "Add to calendar": a small calendar file with a 30-minute reminder (not offered inside the Claude demo)
+function calendarLink(mode) {
+  if (mode !== "saved" || window.claude) return "";
+  const [y, mo, d] = state.date.split("-");
+  const [h, mi] = state.time.split(":").map(Number);
+  const end = h * 60 + mi + SLOT_MINUTES;
+  const stamp = (hh, mm) => `${y}${mo}${d}T${pad(hh)}${pad(mm)}00`;
+  const ics = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Reezy Fxdes//Booking//EN", "BEGIN:VEVENT",
+    `UID:${Date.now()}@reezyfxdes`, `DTSTART;TZID=Africa/Harare:${stamp(h, mi)}`,
+    `DTEND;TZID=Africa/Harare:${stamp(Math.floor(end / 60), end % 60)}`,
+    `SUMMARY:${state.service} with ${state.barber} - Reezy Fxdes`,
+    `LOCATION:${ADDRESS}`, `DESCRIPTION:Booked at Reezy Fxdes / VIP Classic Barbershop. WhatsApp +263719515630`,
+    "BEGIN:VALARM", "TRIGGER:-PT30M", "ACTION:DISPLAY", "DESCRIPTION:Haircut in 30 minutes", "END:VALARM",
+    "END:VEVENT", "END:VCALENDAR",
+  ].join("\r\n");
+  return "data:text/calendar;charset=utf-8," + encodeURIComponent(ics);
 }
 
 let sending = false;

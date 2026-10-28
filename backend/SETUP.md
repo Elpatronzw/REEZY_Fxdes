@@ -41,7 +41,8 @@ Do this on **each** phone (+263 71 951 5630 and +263 78 280 7245):
 
 ## Later changes to the script
 After replacing the **Code** file with a new version (Settings stays as it is), use **Deploy → Manage deployments → Edit (pencil) → Version: New version → Deploy**.
-The URL stays the same.
+The URL stays the same. Do the same after changing **Settings** (PIN, emails, WhatsApp keys):
+the website only uses what has been deployed, not what is saved.
 
 ## Notes
 - Bookings are in the **Bookings** tab of the sheet. Barbers can also open the sheet in the Google Sheets app.
