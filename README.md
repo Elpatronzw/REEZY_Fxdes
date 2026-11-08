@@ -15,7 +15,7 @@ A customer picks a service, a day and a free time, adds their name and phone, an
 Shop settings are at the top of the `<script>` in `demo/reezy-demo.html`:
 - `SERVICES`: names, descriptions and prices (`price: null` shows "TBA")
 - `HOURS` / `OPEN_LATE`: opening hours per day
-- `SERVICES` `minutes`: how long each service takes. Times only show if the whole booking fits
+- `SERVICES` `minutes`: how long each service takes (not shown to clients). Times only show if the whole booking fits
 - `START_STEP`: gap between start times offered (15 minutes)
 - `DAYS_AHEAD`: how many days ahead clients can book
 - `WHATSAPP_NUMBER`: number that bookings go to
@@ -25,3 +25,4 @@ Shop settings are at the top of the `<script>` in `demo/reezy-demo.html`:
 - `index.html`: the public website, built from the source
 - `build-site.sh`: builds `index.html`
 - `assets/logo.jpeg`: shop logo
+- `assets/gallery/`: past-cut photos for the gallery. To add one, copy it in and add a matching line to the gallery list in `demo/reezy-demo.html`

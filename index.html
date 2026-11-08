@@ -124,6 +124,53 @@ p { margin: 0; }
 .band--white { background: var(--white); color: var(--black); }
 .band--white .muted { color: var(--grey-dark); }
 
+/* Gallery: past cuts. 5 across on wide screens, 2 across on phones; tap opens the full-screen viewer */
+.gallery { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.gallery__link {
+  position: relative; display: block; aspect-ratio: 3 / 4; overflow: hidden;
+  background: var(--ink); outline-offset: 3px;
+}
+.gallery__link img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s ease, filter .6s ease; filter: saturate(0.9); }
+.gallery__link::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(10,10,10,.75), rgba(10,10,10,0) 45%);
+  opacity: 0; transition: opacity .4s;
+}
+.gallery__cap {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; padding: 0.9rem;
+  font-size: 0.8rem; line-height: 1.35; color: var(--white);
+  opacity: 0; transform: translateY(6px); transition: opacity .4s, transform .4s;
+}
+@media (hover: hover) {
+  .gallery__link:hover img { transform: scale(1.05); filter: saturate(1.05); }
+  .gallery__link:hover::after, .gallery__link:hover .gallery__cap { opacity: 1; transform: none; }
+}
+.gallery-cta { display: flex; align-items: center; justify-content: space-between; gap: 1rem 2rem; flex-wrap: wrap; margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid var(--line); }
+.gallery-cta p { font-family: var(--display); font-size: 1.8rem; letter-spacing: 0.04em; line-height: 1.1; }
+
+.lightbox {
+  border: 0; padding: 0; margin: 0; max-width: none; max-height: none;
+  width: 100%; height: 100%; background: rgba(10,10,10,0.97); color: var(--white);
+}
+.lightbox::backdrop { background: rgba(10,10,10,0.97); }
+.lightbox[open] { display: grid; grid-template-rows: auto 1fr auto; }
+.lightbox__bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: calc(0.75rem + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 0.75rem max(16px, env(safe-area-inset-left, 0px));
+  font-size: 0.8rem; letter-spacing: 0.2em; color: var(--grey);
+}
+.lightbox__stage { position: relative; min-height: 0; display: grid; place-items: center; padding: 0 16px; }
+.lightbox__img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.lightbox__cap { text-align: center; padding: 0.9rem 16px calc(1.25rem + env(safe-area-inset-bottom, 0px)); color: var(--grey); font-size: 0.9rem; }
+.lightbox button {
+  background: rgba(10,10,10,0.6); color: var(--white); border: 1px solid var(--line);
+  width: 48px; height: 48px; display: grid; place-items: center; cursor: pointer; font: 400 1.6rem/1 var(--body);
+}
+.lightbox button:hover { background: var(--white); color: var(--black); }
+.lightbox__nav { position: absolute; top: 50%; transform: translateY(-50%); }
+.lightbox__nav--prev { left: max(16px, env(safe-area-inset-left, 0px)); }
+.lightbox__nav--next { right: max(16px, env(safe-area-inset-right, 0px)); }
+
 /* Services */
 .price-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
 .price-group { border: 1px solid var(--line); padding: 0.75rem 1.5rem 0.5rem; min-width: 0; }
@@ -135,7 +182,7 @@ p { margin: 0; }
 .service { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--line); min-width: 0; }
 .service:last-child { border-bottom: 0; }
 .service__name { font-size: 1.05rem; }
-.service__mins { display: block; color: var(--grey); font-size: 0.85rem; margin-top: 0.15rem; }
+
 .service__price { font-family: var(--display); font-size: 1.9rem; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .notice { margin-top: 2rem; border: 1px solid var(--line); padding: 1.5rem; }
 .notice h3 { font-size: 1.5rem; letter-spacing: 0.1em; margin-bottom: 0.75rem; }
@@ -273,6 +320,9 @@ p { margin: 0; }
 
   .section { padding-block: 4rem; }
   .price-groups, .book, .visit { grid-template-columns: 1fr; }
+  .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .gallery-cta { flex-direction: column; align-items: stretch; text-align: center; }
+  .lightbox__nav { top: auto; bottom: 0.5rem; transform: none; }
   .price-group { padding: 0.75rem 1rem 0.25rem; }
   .price-group__title { margin: 0 -0.25rem 0.5rem; }
   .card, .done { padding: 1.5rem; }
@@ -289,6 +339,7 @@ p { margin: 0; }
     </a>
     <button class="nav__toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false"><span></span><span></span></button>
     <nav class="nav__links" id="nav-links">
+      <a href="#gallery">Gallery</a>
       <a href="#services">Prices</a>
       <a href="#book">Book</a>
       <a href="#visit">Visit</a>
@@ -311,6 +362,43 @@ p { margin: 0; }
     </div>
     <div class="hero__logo"><img src="assets/logo.jpeg" alt="Reezy Fxdes logo: a crowned portrait with a fade, framed by stars"></div>
   </section>
+
+  <section id="gallery" class="wrap section">
+    <div class="section__head">
+      <p class="eyebrow">Our work</p>
+      <h2>Fresh from the chair</h2>
+      <p class="muted">Real clients, real cuts at VIP Classic Barbershop. Tap a photo to see it up close.</p>
+    </div>
+    <ul class="gallery" id="gallery-list">
+      <li><a class="gallery__link" href="assets/gallery/cut-01.jpg"><img src="assets/gallery/cut-01.jpg" alt="Twisted top with a sharp taper and line-up" width="810" height="1080" loading="lazy" decoding="async"><span class="gallery__cap">Twisted top with a sharp taper and line-up</span></a></li>
+      <li><a class="gallery__link" href="assets/gallery/cut-02.jpg"><img src="assets/gallery/cut-02.jpg" alt="Ladies cut with tinted curls" width="810" height="1080" loading="lazy" decoding="async"><span class="gallery__cap">Ladies cut with tinted curls</span></a></li>
+      <li><a class="gallery__link" href="assets/gallery/cut-03.jpg"><img src="assets/gallery/cut-03.jpg" alt="Low fade with a sharp line-up and full beard" width="810" height="1080" loading="lazy" decoding="async"><span class="gallery__cap">Low fade with a sharp line-up and full beard</span></a></li>
+      <li><a class="gallery__link" href="assets/gallery/cut-04.jpg"><img src="assets/gallery/cut-04.jpg" alt="Waves with a hard part and a clean line-up" width="810" height="1080" loading="lazy" decoding="async"><span class="gallery__cap">Waves with a hard part and a clean line-up</span></a></li>
+      <li><a class="gallery__link" href="assets/gallery/cut-05.jpg"><img src="assets/gallery/cut-05.jpg" alt="Twists with a sharp hairline and a shaped beard" width="810" height="1080" loading="lazy" decoding="async"><span class="gallery__cap">Twists with a sharp hairline and a shaped beard</span></a></li>
+      <li><a class="gallery__link" href="assets/gallery/cut-06.jpg"><img src="assets/gallery/cut-06.jpg" alt="Ladies short cut with a shaved part" width="810" height="1080" loading="lazy" decoding="async"><span class="gallery__cap">Ladies short cut with a shaved part</span></a></li>
+      <li><a class="gallery__link" href="assets/gallery/cut-07.jpg"><img src="assets/gallery/cut-07.jpg" alt="Curly top with a sharp line-up" width="810" height="1080" loading="lazy" decoding="async"><span class="gallery__cap">Curly top with a sharp line-up</span></a></li>
+      <li><a class="gallery__link" href="assets/gallery/cut-08.jpg"><img src="assets/gallery/cut-08.jpg" alt="Short waves with a crisp line-up and goatee" width="810" height="1080" loading="lazy" decoding="async"><span class="gallery__cap">Short waves with a crisp line-up and goatee</span></a></li>
+      <li><a class="gallery__link" href="assets/gallery/cut-09.jpg"><img src="assets/gallery/cut-09.jpg" alt="Short fade with a sharp temple line-up" width="810" height="1080" loading="lazy" decoding="async"><span class="gallery__cap">Short fade with a sharp temple line-up</span></a></li>
+      <li><a class="gallery__link" href="assets/gallery/cut-10.jpg"><img src="assets/gallery/cut-10.jpg" alt="Curly top with a fade and sharp line-up" width="810" height="1080" loading="lazy" decoding="async"><span class="gallery__cap">Curly top with a fade and sharp line-up</span></a></li>
+    </ul>
+    <div class="gallery-cta">
+      <p>Want a cut like this?</p>
+      <a href="#book" class="btn">Book your chair</a>
+    </div>
+  </section>
+
+  <dialog class="lightbox" id="lightbox" aria-label="Photo viewer">
+    <div class="lightbox__bar">
+      <span id="lightbox-count"></span>
+      <button type="button" id="lightbox-close" aria-label="Close photo">×</button>
+    </div>
+    <div class="lightbox__stage">
+      <img class="lightbox__img" id="lightbox-img" alt="">
+      <button type="button" class="lightbox__nav lightbox__nav--prev" id="lightbox-prev" aria-label="Previous photo">‹</button>
+      <button type="button" class="lightbox__nav lightbox__nav--next" id="lightbox-next" aria-label="Next photo">›</button>
+    </div>
+    <p class="lightbox__cap" id="lightbox-cap"></p>
+  </dialog>
 
   <section id="services" class="wrap section">
     <div class="section__head">
@@ -515,7 +603,7 @@ const toMinutes = (t) => { const [h, m] = t.split(":").map(Number); return h * 6
 const toHHMM = (m) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
 const to12h = (t) => { const [h, m] = t.split(":").map(Number); return `${(h % 12) || 12}:${pad(m)} ${h < 12 ? "AM" : "PM"}`; };
 const slotKey = (date, time, barber) => `${date}_${time.replace(":", "")}_${barber}`;
-const fmtMins = (m) => (m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} hr ${m % 60} min` : `${m / 60} hr`);
+
 const longDate = (iso) => new Date(iso + "T00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
@@ -525,7 +613,7 @@ const booked = new Map();          // slotKey -> booking (date, time, barber, se
 // How long the chosen service takes (the dropdown value is the service label)
 const serviceMinutes = (label) => (SERVICES.find((s) => serviceLabel(s) === label) || {}).minutes || DEFAULT_MINUTES;
 const endTime = (time, minutes) => toHHMM(toMinutes(time) + minutes);
-const timeRange = (time, minutes) => `${to12h(time)} – ${to12h(endTime(time, minutes))}`;
+
 
 // True if the chosen barber already has a booking that overlaps this start time and length
 function isTaken(date, time, minutes = serviceMinutes(state.service)) {
@@ -547,13 +635,13 @@ let canWrite = false;
   const box = document.createElement("div");
   box.className = "price-group";
   box.innerHTML = `<h3 class="price-group__title">${esc(group)}</h3><ul class="services">${items
-    .map((s) => `<li class="service"><span class="service__name">${esc(s.name)}<span class="service__mins">${fmtMins(s.minutes)}</span></span><span class="service__price">${formatPrice(s.price)}</span></li>`)
+    .map((s) => `<li class="service"><span class="service__name">${esc(s.name)}</span><span class="service__price">${formatPrice(s.price)}</span></li>`)
     .join("")}</ul>`;
   $("services-list").appendChild(box);
 
   const og = document.createElement("optgroup");
   og.label = group;
-  items.forEach((s) => og.appendChild(new Option(`${serviceLabel(s)} · ${fmtMins(s.minutes)}`, serviceLabel(s))));
+  items.forEach((s) => og.appendChild(new Option(serviceLabel(s), serviceLabel(s))));
   $("service").appendChild(og);
 });
 
@@ -627,7 +715,8 @@ $("barbers").addEventListener("click", (e) => {
 });
 
 // Time dropdown: 15-minute steps from opening. Only times where the chosen barber is free
-// for the whole length of the chosen service are listed, shown as start – finish.
+// for the whole length of the chosen service are listed. Clients see start times only;
+// service lengths stay internal.
 function renderSlots() {
   const sel = $("time");
   sel.innerHTML = "";
@@ -639,8 +728,7 @@ function renderSlots() {
   const free = slotsFor(state.date).filter((t) => !isTaken(state.date, t));
   if (!free.length) { first.text = `${state.barber} is fully booked on this day`; state.time = ""; return; }
   first.text = "Choose a time";
-  const mins = serviceMinutes(state.service);
-  free.forEach((t) => sel.add(new Option(timeRange(t, mins), t)));
+  free.forEach((t) => sel.add(new Option(to12h(t), t)));
   if (state.time && !free.includes(state.time)) state.time = "";
   sel.value = state.time;
 }
@@ -686,7 +774,7 @@ function waLink() {
     `Service: ${state.service}`,
     `Barber: ${state.barber}`,
     `Date: ${longDate(state.date)}`,
-    `Time: ${timeRange(state.time, serviceMinutes(state.service))}`,
+    `Time: ${to12h(state.time)}`,
   ];
   if (field("notes")) lines.push(`Notes: ${field("notes")}`);
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
@@ -696,7 +784,7 @@ const SEND_LABEL = BACKEND_URL ? "Confirm booking" : "Send booking on WhatsApp";
 $("send").textContent = SEND_LABEL;
 
 function update() {
-  const parts = [state.service, state.barber && `with ${state.barber}`, state.date && longDate(state.date), state.time && timeRange(state.time, serviceMinutes(state.service))].filter(Boolean);
+  const parts = [state.service, state.barber && `with ${state.barber}`, state.date && longDate(state.date), state.time && to12h(state.time)].filter(Boolean);
   $("summary").textContent = parts.length ? parts.join(" · ") : "Choose a service, barber, day and time";
   const ready = missing().length === 0;
   const send = $("send");
@@ -733,7 +821,7 @@ function showDone(mode) {
   $("done-text").textContent = text;
   const rows = [
     ["Service", state.service], ["Barber", state.barber],
-    ["Date", longDate(state.date)], ["Time", timeRange(state.time, serviceMinutes(state.service))], ["Where", ADDRESS],
+    ["Date", longDate(state.date)], ["Time", to12h(state.time)], ["Where", ADDRESS],
   ];
   $("done-details").innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}${k === "Where"
     ? ` · <a href="${esc(directionsUrl())}" target="_blank" rel="noopener">Get directions</a>` : ""}</dd>`).join("");
@@ -878,6 +966,45 @@ $("rebook-forget").addEventListener("click", () => {
   renderRebook();
 });
 
+// Gallery viewer: tap a photo for full screen; arrows, keyboard and swipe move between photos.
+// Without JavaScript (or <dialog> support) the links simply open the photo.
+(() => {
+  const box = $("lightbox");
+  if (!box || typeof box.showModal !== "function") return;
+  const links = [...document.querySelectorAll("#gallery-list .gallery__link")];
+  let at = 0;
+  function show(i) {
+    at = (i + links.length) % links.length;
+    const img = links[at].querySelector("img");
+    $("lightbox-img").src = links[at].href;
+    $("lightbox-img").alt = img.alt;
+    $("lightbox-cap").textContent = img.alt;
+    $("lightbox-count").textContent = `${at + 1} / ${links.length}`;
+    new Image().src = links[(at + 1) % links.length].href;   // preload the next photo
+  }
+  links.forEach((a, i) => a.addEventListener("click", (e) => { e.preventDefault(); show(i); box.showModal(); }));
+  $("lightbox-prev").addEventListener("click", () => show(at - 1));
+  $("lightbox-next").addEventListener("click", () => show(at + 1));
+  $("lightbox-close").addEventListener("click", () => box.close());
+  box.addEventListener("click", (e) => { if (e.target === box || e.target.classList.contains("lightbox__stage")) box.close(); });
+  box.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft") show(at - 1);
+    if (e.key === "ArrowRight") show(at + 1);
+  });
+  let startX = null;
+  box.addEventListener("touchstart", (e) => { startX = e.touches[0].clientX; }, { passive: true });
+  box.addEventListener("touchend", (e) => {
+    if (startX == null) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 40) show(at + (dx < 0 ? 1 : -1));
+    startX = null;
+  });
+  box.addEventListener("close", () => {
+    const back = links[at];
+    if (back) back.focus({ preventScroll: true });
+  });
+})();
+
 // Copy number buttons
 document.querySelectorAll(".copy").forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -945,7 +1072,7 @@ if (window.claude) $("portal-link").hidden = true;
     list.innerHTML = rows.length ? "" : '<li class="muted">No bookings yet.</li>';
     rows.forEach(([key, b]) => {
       const li = document.createElement("li");
-      li.innerHTML = `<span>${esc(longDate(b.date))} · ${esc(timeRange(b.time, Number(b.minutes) || DEFAULT_MINUTES))} · ${esc(b.barber || "")} · ${esc(b.service || "")}</span>`;
+      li.innerHTML = `<span>${esc(longDate(b.date))} · ${esc(to12h(b.time))} – ${esc(to12h(endTime(b.time, Number(b.minutes) || DEFAULT_MINUTES)))} · ${esc(b.barber || "")} · ${esc(b.service || "")}</span>`;
       const btn = document.createElement("button");
       btn.type = "button";
       btn.textContent = "Free up";
