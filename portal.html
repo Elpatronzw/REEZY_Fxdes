@@ -130,10 +130,67 @@ main { padding-block: 1.25rem 3rem; }
 .empty { border: 1px dashed var(--line); padding: 2rem 1rem; text-align: center; color: var(--grey); }
 
 /* Reports */
-.btn--ghost { background: transparent; color: var(--white); border-color: var(--white); width: 100%; gap: 0.5rem; }
+.btn--ghost { background: transparent; color: var(--white); border-color: var(--white); gap: 0.5rem; }
 .btn--ghost:hover { background: var(--white); color: var(--black); }
-.back { justify-self: start; background: none; border: 0; color: var(--grey); font: 600 0.75rem var(--body); text-transform: uppercase; letter-spacing: 0.12em; cursor: pointer; padding: 0.5rem 0; min-height: 40px; }
-.back:hover { color: var(--white); }
+.btn--block { width: 100%; }
+
+/* Menu: Home, Reports, Settings. A tab bar along the bottom, like a phone app */
+body.has-tabbar { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 15;
+  background: rgba(10,10,10,0.97); backdrop-filter: blur(8px); border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.tabbar__inner { max-width: 720px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); }
+.tab {
+  min-height: 64px; display: grid; place-items: center; align-content: center; gap: 0.3rem;
+  background: none; border: 0; color: var(--grey); cursor: pointer;
+  font: 600 0.68rem var(--body); text-transform: uppercase; letter-spacing: 0.12em;
+}
+.tab[aria-current="page"] { color: var(--white); box-shadow: inset 0 2px 0 var(--white); }
+
+/* Settings */
+.panel { display: grid; gap: 1rem; }
+.hint { color: var(--grey); font-size: 0.9rem; }
+.savebar { position: sticky; bottom: calc(72px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 0.4rem; padding: 0.75rem; background: var(--black); border: 1px solid var(--line); z-index: 5; }
+.msg { font-size: 0.85rem; min-height: 1.2em; }
+.msg.is-ok { color: #7ee2a8; }
+.msg.is-bad { color: var(--error); }
+.inp, .sel {
+  width: 100%; min-height: 46px; padding: 0 0.75rem; border: 1px solid var(--line); background: var(--black); color: var(--white);
+  font-size: 16px; border-radius: 0;
+}
+.inp:focus, .sel:focus { border-color: var(--white); outline: none; }
+.fld { display: grid; gap: 0.3rem; min-width: 0; }
+.fld > span { font-size: 0.66rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--grey); }
+.row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.6rem; }
+.check { display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; cursor: pointer; }
+.check input { width: 20px; height: 20px; accent-color: var(--white); }
+.minis { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.minis button {
+  min-height: 38px; padding: 0 0.75rem; border: 1px solid var(--line); background: transparent; color: var(--white);
+  font: 600 0.7rem var(--body); text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer;
+}
+.minis button:disabled { opacity: 0.35; cursor: default; }
+.minis .is-armed { background: var(--error); border-color: var(--error); color: var(--black); }
+.minis .grow { margin-left: auto; }
+
+.card { background: var(--card); border: 1px solid var(--line); padding: 0.9rem; display: grid; gap: 0.7rem; }
+.card__num { font-family: var(--display); font-size: 1.2rem; letter-spacing: 0.06em; color: var(--grey); }
+
+.ptiles { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+@media (min-width: 560px) { .ptiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.ptile { background: var(--card); border: 1px solid var(--line); display: grid; gap: 0.5rem; padding: 0 0 0.6rem; min-width: 0; }
+.ptile img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; background: #1b1b1b; }
+.ptile .inp { min-height: 40px; font-size: 14px; margin: 0 0.5rem; width: calc(100% - 1rem); }
+.ptile .minis { padding: 0 0.5rem; }
+.ptile .minis button { flex: 1; padding: 0 0.3rem; }
+.upload { position: relative; }
+.upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+
+.hours-row { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr) minmax(0, 1fr); gap: 0.5rem; align-items: center; }
+.hours-row .check { font-weight: 600; }
+.hours-row .inp:disabled { opacity: 0.35; }
 .period { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 0.5rem; }
 .period .icon-btn { width: 44px; height: 44px; }
 .period .icon-btn:disabled { opacity: 0.3; cursor: default; }
@@ -208,10 +265,6 @@ main { padding-block: 1.25rem 3rem; }
       <div class="stat"><strong id="stat-week">0</strong><span>Next 7 days</span></div>
     </div>
 
-    <button type="button" class="btn btn--ghost" id="open-reports">
-      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
-      View reports
-    </button>
 
     <div class="filters">
       <div class="seg" id="barber-filter" role="group" aria-label="Barber"></div>
@@ -222,7 +275,6 @@ main { padding-block: 1.25rem 3rem; }
   </section>
 
   <section id="reports" class="app" hidden>
-    <button type="button" class="back" id="close-reports">‹ Back to bookings</button>
     <div class="head">
       <h1>Reports</h1>
       <p class="updated muted" id="report-updated"></p>
@@ -240,7 +292,61 @@ main { padding-block: 1.25rem 3rem; }
     </div>
     <div id="report-body" class="app"></div>
   </section>
+
+  <section id="settings" class="app" hidden>
+    <div class="head">
+      <h1>Settings</h1>
+      <p class="updated muted" id="settings-updated"></p>
+    </div>
+    <div class="seg" id="settings-tabs" role="group" aria-label="Settings section"></div>
+
+    <div class="panel" id="panel-gallery">
+      <p class="hint">These photos show in the "Fresh from the chair" gallery on the website, in this order. Changes save straight away.</p>
+      <label class="btn upload" id="photo-add">
+        + Add photos
+        <input type="file" id="photo-input" accept="image/*" multiple aria-label="Add photos">
+      </label>
+      <p class="msg" id="gallery-msg" role="status"></p>
+      <ul class="ptiles" id="photo-list"></ul>
+    </div>
+
+    <div class="panel" id="panel-prices" hidden>
+      <p class="hint">The price list and booking menu on the website. Length is how long the barber is blocked for each booking; clients don't see it.</p>
+      <div id="svc-list" class="panel"></div>
+      <button type="button" class="btn btn--ghost btn--block" id="svc-add">+ Add a service</button>
+      <div class="savebar">
+        <button type="button" class="btn" id="svc-save">Save price list</button>
+        <p class="msg" id="svc-msg" role="status"></p>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-hours" hidden>
+      <p class="hint">Opening hours on the website. Clients can only book times that finish before closing.</p>
+      <div class="card" id="hours-list"></div>
+      <div class="savebar">
+        <button type="button" class="btn" id="hours-save">Save opening hours</button>
+        <p class="msg" id="hours-msg" role="status"></p>
+      </div>
+    </div>
+  </section>
 </main>
+
+<nav class="tabbar" id="tabbar" aria-label="Portal menu" hidden>
+  <div class="tabbar__inner">
+    <button type="button" class="tab" data-tab="app">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>
+      Home
+    </button>
+    <button type="button" class="tab" data-tab="reports">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+      Reports
+    </button>
+    <button type="button" class="tab" data-tab="settings">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      Settings
+    </button>
+  </div>
+</nav>
 
 <script>
 // Same URL as BACKEND_URL in the booking page
@@ -274,13 +380,30 @@ let view = "upcoming";
 const alerted = new Set();
 let timer = null;
 
+// Screens: "none" (no backend), "login", and the three menu screens "app" (Home), "reports", "settings"
+const SCREENS = ["app", "reports", "settings"];
 function show(which) {
   $("not-connected").hidden = which !== "none";
   $("login").hidden = which !== "login";
-  $("app").hidden = which !== "app";
-  $("reports").hidden = which !== "reports";
-  $("top-btns").hidden = which !== "app" && which !== "reports";
+  SCREENS.forEach((s) => { $(s).hidden = which !== s; });
+  const inApp = SCREENS.includes(which);
+  $("top-btns").hidden = !inApp;
+  $("tabbar").hidden = !inApp;
+  document.body.classList.toggle("has-tabbar", inApp);
+  document.querySelectorAll(".tab").forEach((t) => {
+    if (t.dataset.tab === which) t.setAttribute("aria-current", "page"); else t.removeAttribute("aria-current");
+  });
 }
+$("tabbar").addEventListener("click", (e) => {
+  const t = e.target.closest(".tab");
+  if (!t) return;
+  const to = t.dataset.tab;
+  show(to);
+  window.scrollTo(0, 0);
+  if (to === "app") { render(); load(); }
+  if (to === "reports") loadReport();
+  if (to === "settings") loadSettings();
+});
 
 async function load() {
   try {
@@ -463,7 +586,7 @@ $("alerts").addEventListener("click", async () => {
 
 $("refresh").addEventListener("click", async () => {
   $("refresh").classList.add("is-spinning");
-  await (!$("reports").hidden ? loadReport() : load());
+  await (!$("reports").hidden ? loadReport() : !$("settings").hidden ? loadSettings() : load());
   $("refresh").classList.remove("is-spinning");
 });
 
@@ -497,11 +620,6 @@ function periodRange() {
   return { from: isoDate(first), to: isoDate(last), label: fmt(first, { month: "long", year: "numeric" }) };
 }
 
-function openReports() {
-  show("reports");
-  window.scrollTo(0, 0);
-  loadReport();
-}
 
 async function loadReport() {
   chips($("period-filter"), [["day", "Day"], ["week", "Week"], ["month", "Month"]], period, (v) => { period = v; offset = 0; loadReport(); });
@@ -584,10 +702,294 @@ function renderReport(rows, range) {
   $("report-body").innerHTML = html;
 }
 
-$("open-reports").addEventListener("click", openReports);
-$("close-reports").addEventListener("click", () => { show("app"); render(); window.scrollTo(0, 0); });
 $("period-prev").addEventListener("click", () => { offset--; loadReport(); });
 $("period-next").addEventListener("click", () => { if (offset < 0) { offset++; loadReport(); } });
+
+// ---------- Settings: gallery photos, price list and opening hours shown on the website ----------
+// Saved in the booking system. Until something is saved, the website uses the built-in
+// versions below (keep these in step with the defaults in demo/reezy-demo.html).
+const DEFAULT_SERVICES = [
+  { group: "Gents", name: "Fade", price: 5, minutes: 45 },
+  { group: "Gents", name: "Fade + Dye", price: 8, minutes: 60 },
+  { group: "Gents", name: "Fade + Dye + Shampoo & Enhancements", price: 10, minutes: 60 },
+  { group: "Gents", name: "Line Up", price: 2, minutes: 30 },
+  { group: "Ladies", name: "Ladies", price: 5, minutes: 45 },
+  { group: "Ladies", name: "Ladies Cut + Dye / Tint / Bleach", price: 10, minutes: 60 },
+  { group: "Ladies", name: "Ladies + Curls + Tint", price: 15, minutes: 60 },
+  { group: "Home Visit", name: "Home Visit", price: 20, unit: "per head", minutes: 120, note: "We come to you. Any cut, priced per person.", needsAddress: true },
+];
+const DEFAULT_GALLERY = [
+  "Twisted top with a sharp taper and line-up", "Ladies cut with tinted curls", "Low fade with a sharp line-up and full beard",
+  "Waves with a hard part and a clean line-up", "Twists with a sharp hairline and a shaped beard", "Ladies short cut with a shaved part",
+  "Curly top with a sharp line-up", "Short waves with a crisp line-up and goatee", "Short fade with a sharp temple line-up",
+  "Curly top with a fade and sharp line-up",
+].map((caption, i) => ({ src: `assets/gallery/cut-${pad(i + 1)}.jpg`, caption }));
+const DEFAULT_HOURS = Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map((d) => [d, { open: "06:30", close: "22:30" }]));
+const LENGTHS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 210, 240];
+const lengthLabel = (m) => (m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} hr ${m % 60} min` : `${m / 60} hr`);
+const clone = (x) => JSON.parse(JSON.stringify(x));
+
+let settingsTab = "gallery";
+let photos = [];          // [{src, caption, id?}]
+let services = [];        // working copy of the price list
+let hours = {};           // {0..6: {open, close} | null}
+let settingsLoaded = false;
+
+function setMsg(id, text, kind) {
+  const el = $(id);
+  el.textContent = text;
+  el.className = "msg" + (kind ? " is-" + kind : "");
+}
+
+async function api(body) {
+  const res = await (await fetch(BACKEND_URL, { method: "POST", body: JSON.stringify({ ...body, pin }) })).json();
+  if (!res.ok && res.error === "pin") { pin = ""; store.del("reezy:pin"); show("login"); $("login-error").textContent = "That PIN isn't right."; }
+  if (!res.ok && res.error === "unknown_action") res.message = "Settings need the latest booking system code. Update and redeploy the Apps Script.";
+  return res;
+}
+
+function renderSettingsTabs() {
+  chips($("settings-tabs"), [["gallery", "Gallery"], ["prices", "Price list"], ["hours", "Hours"]], settingsTab, (v) => { settingsTab = v; renderSettingsTabs(); });
+  $("panel-gallery").hidden = settingsTab !== "gallery";
+  $("panel-prices").hidden = settingsTab !== "prices";
+  $("panel-hours").hidden = settingsTab !== "hours";
+}
+
+async function loadSettings() {
+  renderSettingsTabs();
+  $("settings-updated").textContent = "Loading…";
+  try {
+    const res = await (await fetch(`${BACKEND_URL}?action=config&t=${Date.now()}`)).json();
+    const cfg = (res && res.config) || {};
+    photos = Array.isArray(cfg.gallery) ? cfg.gallery : clone(DEFAULT_GALLERY);
+    services = Array.isArray(cfg.services) && cfg.services.length ? clone(cfg.services) : clone(DEFAULT_SERVICES);
+    hours = cfg.hours ? clone(cfg.hours) : clone(DEFAULT_HOURS);
+    settingsLoaded = true;
+    renderPhotos(); renderServicesEditor(); renderHoursEditor();
+    $("settings-updated").textContent = "Up to date";
+  } catch {
+    $("settings-updated").textContent = "Couldn't reach the booking system.";
+  }
+}
+
+// ----- Gallery -----
+function renderPhotos() {
+  $("photo-list").innerHTML = photos.length ? photos.map((p, i) => `
+    <li class="ptile" data-i="${i}">
+      <img src="${esc(p.src)}" alt="" loading="lazy" referrerpolicy="no-referrer">
+      <input class="inp" data-cap="${i}" value="${esc(p.caption)}" maxlength="100" aria-label="Caption for photo ${i + 1}">
+      <div class="minis">
+        <button type="button" data-move="-1" ${i === 0 ? "disabled" : ""} aria-label="Move photo ${i + 1} earlier">‹</button>
+        <button type="button" data-move="1" ${i === photos.length - 1 ? "disabled" : ""} aria-label="Move photo ${i + 1} later">›</button>
+        <button type="button" data-remove aria-label="Remove photo ${i + 1}">Remove</button>
+      </div>
+    </li>`).join("") : `<li class="empty" style="grid-column:1/-1">No photos yet. Add some so clients can see your work.</li>`;
+}
+
+async function saveGallery(okText) {
+  setMsg("gallery-msg", "Saving…");
+  try {
+    const res = await api({ action: "saveConfig", config: { gallery: photos } });
+    if (res.ok) { photos = res.config.gallery || photos; renderPhotos(); setMsg("gallery-msg", okText || "Saved. The website shows the new gallery.", "ok"); return true; }
+    setMsg("gallery-msg", res.message || "Couldn't save. Try again.", "bad");
+  } catch { setMsg("gallery-msg", "Couldn't save. Check the connection and try again.", "bad"); }
+  return false;
+}
+
+$("photo-list").addEventListener("click", async (e) => {
+  const tile = e.target.closest(".ptile");
+  const btn = e.target.closest("button");
+  if (!tile || !btn) return;
+  const i = Number(tile.dataset.i);
+  if (btn.dataset.move) {
+    const j = i + Number(btn.dataset.move);
+    [photos[i], photos[j]] = [photos[j], photos[i]];
+    renderPhotos();
+    saveGallery("Order saved.");
+    return;
+  }
+  if (btn.hasAttribute("data-remove")) {
+    if (!btn.dataset.armed) {   // second tap needed, so a photo isn't removed by accident
+      btn.dataset.armed = "1"; btn.textContent = "Sure?"; btn.classList.add("is-armed");
+      setTimeout(() => { if (btn.isConnected) { delete btn.dataset.armed; btn.textContent = "Remove"; btn.classList.remove("is-armed"); } }, 4000);
+      return;
+    }
+    const [gone] = photos.splice(i, 1);
+    renderPhotos();
+    if (await saveGallery("Photo removed from the website.") && gone && gone.id) api({ action: "deletePhoto", id: gone.id }).catch(() => {});
+  }
+});
+$("photo-list").addEventListener("change", (e) => {
+  const i = e.target.dataset.cap;
+  if (i === undefined) return;
+  photos[Number(i)].caption = e.target.value.trim() || "Fresh cut at VIP Classic";
+  saveGallery("Caption saved.");
+});
+
+// Phones take big photos: shrink to 1600px on the long side before sending
+function shrinkPhoto(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.naturalWidth * scale);
+      c.height = Math.round(img.naturalHeight * scale);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL("image/jpeg", 0.85).split(",")[1]);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("unreadable")); };
+    img.src = url;
+  });
+}
+
+$("photo-input").addEventListener("change", async (e) => {
+  const files = [...e.target.files].filter((f) => f.type.startsWith("image/"));
+  e.target.value = "";
+  if (!files.length) return;
+  if (!settingsLoaded) { setMsg("gallery-msg", "Still loading. Try again in a moment.", "bad"); return; }
+  $("photo-add").classList.add("is-busy");
+  const added = [];
+  let failed = 0;
+  for (let n = 0; n < files.length; n++) {
+    setMsg("gallery-msg", `Uploading photo ${n + 1} of ${files.length}…`);
+    try {
+      const data = await shrinkPhoto(files[n]);
+      const res = await api({ action: "upload", mime: "image/jpeg", data });
+      if (res.ok) added.push({ src: res.src, caption: "Fresh cut at VIP Classic", id: res.id });
+      else { failed++; if (res.message) setMsg("gallery-msg", res.message, "bad"); if (res.error === "pin" || res.error === "unknown_action") break; }
+    } catch { failed++; }
+  }
+  $("photo-add").classList.remove("is-busy");
+  if (!added.length) { if (failed) setMsg("gallery-msg", $("gallery-msg").textContent.startsWith("Uploading") ? "Couldn't upload. Check the connection and try again." : $("gallery-msg").textContent, "bad"); return; }
+  photos = [...added, ...photos];   // newest work first
+  renderPhotos();
+  await saveGallery(`${added.length === 1 ? "Photo" : added.length + " photos"} added to the website${failed ? `. ${failed} couldn't be uploaded` : ""}. Tap a caption to describe the cut.`);
+});
+
+// ----- Price list -----
+function renderServicesEditor() {
+  const groups = [...new Set(services.map((s) => s.group).filter(Boolean))];
+  $("svc-list").innerHTML = `<datalist id="group-options">${groups.map((g) => `<option value="${esc(g)}">`).join("")}</datalist>` +
+    services.map((s, i) => `
+    <div class="card" data-i="${i}">
+      <div class="minis"><span class="card__num">${i + 1}. ${esc(s.name || "New service")}</span>
+        <button type="button" class="grow" data-move="-1" ${i === 0 ? "disabled" : ""} aria-label="Move up">↑</button>
+        <button type="button" data-move="1" ${i === services.length - 1 ? "disabled" : ""} aria-label="Move down">↓</button>
+        <button type="button" data-remove>Remove</button>
+      </div>
+      <label class="fld"><span>Name</span><input class="inp" data-f="name" value="${esc(s.name)}" maxlength="80" placeholder="e.g. Fade"></label>
+      <div class="row2">
+        <label class="fld"><span>Price ($)</span><input class="inp" data-f="price" type="number" inputmode="decimal" min="0" step="0.5" value="${esc(s.price)}"></label>
+        <label class="fld"><span>Section</span><input class="inp" data-f="group" list="group-options" value="${esc(s.group)}" maxlength="30" placeholder="e.g. Gents"></label>
+      </div>
+      <div class="row2">
+        <label class="fld"><span>Length (hidden)</span><select class="sel" data-f="minutes">${LENGTHS.map((m) => `<option value="${m}" ${Number(s.minutes) === m ? "selected" : ""}>${lengthLabel(m)}</option>`).join("")}</select></label>
+        <label class="fld"><span>After price</span><input class="inp" data-f="unit" value="${esc(s.unit || "")}" maxlength="20" placeholder="e.g. per head"></label>
+      </div>
+      <label class="fld"><span>Note under the name</span><input class="inp" data-f="note" value="${esc(s.note || "")}" maxlength="120" placeholder="Optional"></label>
+      <label class="check"><input type="checkbox" data-f="needsAddress" ${s.needsAddress ? "checked" : ""}> Ask the client for their address (home visits)</label>
+    </div>`).join("");
+}
+function readServicesEditor() {
+  document.querySelectorAll("#svc-list .card").forEach((card) => {
+    const s = services[Number(card.dataset.i)];
+    card.querySelectorAll("[data-f]").forEach((el) => {
+      const f = el.dataset.f;
+      if (f === "needsAddress") s[f] = el.checked;
+      else if (f === "price" || f === "minutes") s[f] = el.value === "" ? "" : Number(el.value);
+      else s[f] = el.value.trim();
+    });
+  });
+}
+$("svc-list").addEventListener("click", (e) => {
+  const btn = e.target.closest("button");
+  const card = e.target.closest(".card");
+  if (!btn || !card) return;
+  readServicesEditor();
+  const i = Number(card.dataset.i);
+  if (btn.dataset.move) {
+    const j = i + Number(btn.dataset.move);
+    [services[i], services[j]] = [services[j], services[i]];
+  } else if (btn.hasAttribute("data-remove")) {
+    if (!btn.dataset.armed) {
+      btn.dataset.armed = "1"; btn.textContent = "Sure?"; btn.classList.add("is-armed");
+      setTimeout(() => { if (btn.isConnected) { delete btn.dataset.armed; btn.textContent = "Remove"; btn.classList.remove("is-armed"); } }, 4000);
+      return;
+    }
+    services.splice(i, 1);
+  }
+  renderServicesEditor();
+  setMsg("svc-msg", "Not saved yet.");
+});
+$("svc-list").addEventListener("input", () => setMsg("svc-msg", "Not saved yet."));
+$("svc-add").addEventListener("click", () => {
+  readServicesEditor();
+  services.push({ group: services.length ? services[0].group : "Gents", name: "", price: "", minutes: 45 });
+  renderServicesEditor();
+  const cards = document.querySelectorAll("#svc-list .card");
+  const last = cards[cards.length - 1];
+  last.scrollIntoView({ behavior: "smooth", block: "center" });
+  last.querySelector('[data-f="name"]').focus({ preventScroll: true });
+  setMsg("svc-msg", "Not saved yet.");
+});
+$("svc-save").addEventListener("click", async () => {
+  readServicesEditor();
+  const bad = services.findIndex((s) => !s.name || s.price === "" || !(Number(s.price) >= 0));
+  if (!services.length) return setMsg("svc-msg", "Keep at least one service.", "bad");
+  if (bad >= 0) return setMsg("svc-msg", `Service ${bad + 1} needs a name and a price.`, "bad");
+  const names = services.map((s) => s.name.toLowerCase());
+  const dup = names.findIndex((n, i) => names.indexOf(n) !== i);
+  if (dup >= 0) return setMsg("svc-msg", `"${services[dup].name}" is listed twice. Give each service its own name.`, "bad");
+  $("svc-save").disabled = true;
+  setMsg("svc-msg", "Saving…");
+  try {
+    const res = await api({ action: "saveConfig", config: { services } });
+    if (res.ok) { services = clone(res.config.services); renderServicesEditor(); setMsg("svc-msg", "Saved. The website shows the new price list.", "ok"); }
+    else setMsg("svc-msg", res.message || "Couldn't save. Try again.", "bad");
+  } catch { setMsg("svc-msg", "Couldn't save. Check the connection and try again.", "bad"); }
+  $("svc-save").disabled = false;
+});
+
+// ----- Opening hours -----
+const WEEK = [[1, "Monday"], [2, "Tuesday"], [3, "Wednesday"], [4, "Thursday"], [5, "Friday"], [6, "Saturday"], [0, "Sunday"]];
+function renderHoursEditor() {
+  $("hours-list").innerHTML = WEEK.map(([d, name]) => {
+    const h = hours[d];
+    return `<div class="hours-row" data-d="${d}">
+      <label class="check"><input type="checkbox" data-open ${h ? "checked" : ""}> ${name.slice(0, 3)}</label>
+      <input class="inp" type="time" step="900" data-from value="${h ? h.open : "06:30"}" ${h ? "" : "disabled"} aria-label="${name} opens">
+      <input class="inp" type="time" step="900" data-to value="${h ? h.close : "22:30"}" ${h ? "" : "disabled"} aria-label="${name} closes">
+    </div>`;
+  }).join("");
+}
+$("hours-list").addEventListener("change", (e) => {
+  const row = e.target.closest(".hours-row");
+  if (row && e.target.matches("[data-open]")) row.querySelectorAll(".inp").forEach((i) => { i.disabled = !e.target.checked; });
+  setMsg("hours-msg", "Not saved yet.");
+});
+$("hours-save").addEventListener("click", async () => {
+  const next = {};
+  let bad = "";
+  document.querySelectorAll("#hours-list .hours-row").forEach((row) => {
+    const d = row.dataset.d;
+    if (!row.querySelector("[data-open]").checked) { next[d] = null; return; }
+    const open = row.querySelector("[data-from]").value, close = row.querySelector("[data-to]").value;
+    if (!open || !close || open >= close) bad = bad || WEEK.find(([n]) => String(n) === d)[1];
+    next[d] = { open, close };
+  });
+  if (bad) return setMsg("hours-msg", `${bad}: closing time must be after opening time.`, "bad");
+  $("hours-save").disabled = true;
+  setMsg("hours-msg", "Saving…");
+  try {
+    const res = await api({ action: "saveConfig", config: { hours: next } });
+    if (res.ok) { hours = clone(res.config.hours); renderHoursEditor(); setMsg("hours-msg", "Saved. The website shows the new opening hours.", "ok"); }
+    else setMsg("hours-msg", res.message || "Couldn't save. Try again.", "bad");
+  } catch { setMsg("hours-msg", "Couldn't save. Check the connection and try again.", "bad"); }
+  $("hours-save").disabled = false;
+});
 
 $("login").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -608,7 +1010,7 @@ let soonTimer = null;
 function start() {
   show("app");
   clearInterval(timer); clearInterval(soonTimer);
-  timer = setInterval(() => { if ($("reports").hidden) load(); }, 60000);   // refresh bookings every minute
+  timer = setInterval(() => { if (!$("app").hidden) load(); }, 60000);   // refresh bookings every minute while Home is open
   soonTimer = setInterval(checkSoon, 20000); // keep "in X min" alerts current
 }
 

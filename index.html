@@ -589,9 +589,10 @@ const BARBERS = ["Brian", "Reezy"];
 // Empty = bookings are sent by WhatsApp only, with no portal or reminders.
 // The Claude demo page cannot reach Google, so it stays on the WhatsApp-only flow.
 const BACKEND_URL = window.claude ? "" : "https://script.google.com/macros/s/AKfycbzcOgP2GrweLuP1FigC4o43Knu_ZRdmL_4yKzIONT617YdVdZlv6OtuzDCqZVZgeNah/exec";
-// Prices from the shop's price list (effective 20 October).
+// Prices from the shop's price list (effective 20 October). These are the built-in defaults:
+// once the barbers save a price list in the portal's Settings, the website uses that instead.
 // minutes = how long the service takes; a booking blocks the barber for that long.
-const SERVICES = [
+let SERVICES = [
   { group: "Gents", name: "Fade", price: 5, minutes: 45 },
   { group: "Gents", name: "Fade + Dye", price: 8, minutes: 60 },
   { group: "Gents", name: "Fade + Dye + Shampoo & Enhancements", price: 10, minutes: 60 },
@@ -606,7 +607,7 @@ const SERVICES = [
 const CURRENCY = "$";
 // Open every day 6:30am – 10:30pm. A booking must finish by closing time.
 const OPEN = { open: "06:30", close: "22:30", label: "6:30 AM – 10:30 PM" };
-const HOURS = { 0: OPEN, 1: OPEN, 2: OPEN, 3: OPEN, 4: OPEN, 5: OPEN, 6: OPEN };
+let HOURS = { 0: OPEN, 1: OPEN, 2: OPEN, 3: OPEN, 4: OPEN, 5: OPEN, 6: OPEN };
 // Start times are offered every 15 minutes, so a 45-minute cut leaves no gap before the next client
 const START_STEP = 15;
 // Length assumed for bookings saved before services had their own length
@@ -656,29 +657,43 @@ function isBusy(barber, date, time, minutes = serviceMinutes(state.service)) {
 let store = null;                  // db collection, when the viewer has it
 let canWrite = false;
 
-// Price list + service dropdown, grouped (Gents, Ladies, Home Visit)
-[...new Set(SERVICES.map((s) => s.group))].forEach((group) => {
-  const items = SERVICES.filter((s) => s.group === group);
-  const box = document.createElement("div");
-  box.className = "price-group";
-  box.innerHTML = `<h3 class="price-group__title">${esc(group)}</h3><ul class="services">${items
-    .map((s) => `<li class="service"><span class="service__name">${esc(s.name)}${s.note ? `<span class="service__note">${esc(s.note)}</span>` : ""}</span><span class="service__price">${formatPrice(s.price)}${s.unit ? `<span class="service__unit">${esc(s.unit)}</span>` : ""}</span></li>`)
-    .join("")}</ul>`;
-  $("services-list").appendChild(box);
+// Price list + service dropdown, grouped (Gents, Ladies, Home Visit, ...)
+function renderServices() {
+  $("services-list").innerHTML = "";
+  const sel = $("service");
+  while (sel.options.length > 1 || sel.querySelector("optgroup")) sel.removeChild(sel.lastChild);
+  [...new Set(SERVICES.map((s) => s.group))].forEach((group) => {
+    const items = SERVICES.filter((s) => s.group === group);
+    const box = document.createElement("div");
+    box.className = "price-group";
+    box.innerHTML = `<h3 class="price-group__title">${esc(group)}</h3><ul class="services">${items
+      .map((s) => `<li class="service"><span class="service__name">${esc(s.name)}${s.note ? `<span class="service__note">${esc(s.note)}</span>` : ""}</span><span class="service__price">${formatPrice(s.price)}${s.unit ? `<span class="service__unit">${esc(s.unit)}</span>` : ""}</span></li>`)
+      .join("")}</ul>`;
+    $("services-list").appendChild(box);
 
-  const og = document.createElement("optgroup");
-  og.label = group;
-  items.forEach((s) => og.appendChild(new Option(serviceLabel(s), serviceLabel(s))));
-  $("service").appendChild(og);
-});
+    const og = document.createElement("optgroup");
+    og.label = group;
+    items.forEach((s) => og.appendChild(new Option(serviceLabel(s), serviceLabel(s))));
+    sel.appendChild(og);
+  });
+  // Keep the client's choice if it still exists after a price list update
+  if (state.service && SERVICES.some((s) => serviceLabel(s) === state.service)) sel.value = state.service;
+  else { state.service = ""; sel.value = ""; }
+}
+renderServices();
 
 // Hours
-[1, 2, 3, 4, 5, 6, 0].forEach((d) => {
-  const h = HOURS[d];
-  const li = document.createElement("li");
-  li.innerHTML = `<span>${DAY_NAMES[d]}</span><span>${h ? esc(h.label || `${h.open} – ${h.close}`) : "Closed"}</span>`;
-  $("hours-list").appendChild(li);
-});
+const hoursLabel = (h) => h.label || `${to12h(h.open)} – ${to12h(h.close)}`;
+function renderHours() {
+  $("hours-list").innerHTML = "";
+  [1, 2, 3, 4, 5, 6, 0].forEach((d) => {
+    const h = HOURS[d];
+    const li = document.createElement("li");
+    li.innerHTML = `<span>${DAY_NAMES[d]}</span><span>${h ? esc(hoursLabel(h)) : "Closed"}</span>`;
+    $("hours-list").appendChild(li);
+  });
+}
+renderHours();
 
 // Start times on a day that leave room for a booking of this length before closing
 function slotsFor(date, minutes = serviceMinutes(state.service)) {
@@ -1054,12 +1069,20 @@ $("rebook-forget").addEventListener("click", () => {
   renderRebook();
 });
 
+// Gallery photos saved from the portal's Settings replace the built-in ones
+function renderGallery(photos) {
+  $("gallery-list").innerHTML = photos.map((p) => `<li><a class="gallery__link" href="${esc(p.src)}">` +
+    `<img src="${esc(p.src)}" alt="${esc(p.caption)}" width="810" height="1080" loading="lazy" decoding="async" referrerpolicy="no-referrer">` +
+    `<span class="gallery__cap">${esc(p.caption)}</span></a></li>`).join("");
+  $("gallery").hidden = !photos.length;
+}
+
 // Gallery viewer: tap a photo for full screen; arrows, keyboard and swipe move between photos.
 // Without JavaScript (or <dialog> support) the links simply open the photo.
 (() => {
   const box = $("lightbox");
   if (!box || typeof box.showModal !== "function") return;
-  const links = [...document.querySelectorAll("#gallery-list .gallery__link")];
+  let links = [];
   let at = 0;
   function show(i) {
     at = (i + links.length) % links.length;
@@ -1070,7 +1093,14 @@ $("rebook-forget").addEventListener("click", () => {
     $("lightbox-count").textContent = `${at + 1} / ${links.length}`;
     new Image().src = links[(at + 1) % links.length].href;   // preload the next photo
   }
-  links.forEach((a, i) => a.addEventListener("click", (e) => { e.preventDefault(); show(i); box.showModal(); }));
+  $("gallery-list").addEventListener("click", (e) => {
+    const a = e.target.closest(".gallery__link");
+    if (!a) return;
+    e.preventDefault();
+    links = [...document.querySelectorAll("#gallery-list .gallery__link")];
+    show(links.indexOf(a));
+    box.showModal();
+  });
   $("lightbox-prev").addEventListener("click", () => show(at - 1));
   $("lightbox-next").addEventListener("click", () => show(at + 1));
   $("lightbox-close").addEventListener("click", () => box.close());
@@ -1128,6 +1158,38 @@ renderSlots();
 renderRebook();
 update();
 loadBackendSlots(state.date);
+
+// Price list, gallery and opening hours edited in the portal's Settings.
+// The last copy is remembered on this phone so a repeat visit shows it straight away.
+const CONFIG_KEY = "reezy:config";
+function applyConfig(cfg) {
+  if (!cfg || typeof cfg !== "object") return;
+  if (Array.isArray(cfg.services) && cfg.services.length) { SERVICES = cfg.services; renderServices(); renderNotesField(); }
+  if (cfg.hours && typeof cfg.hours === "object") {
+    HOURS = {};
+    for (let d = 0; d < 7; d++) HOURS[d] = cfg.hours[d] || null;
+    renderHours();
+    renderDays();
+    if (state.date && !$("days").querySelector(`[data-date="${state.date}"]`)) {
+      const first = $("days").querySelector(".day");
+      state.date = first ? first.dataset.date : "";
+      state.time = "";
+      renderDays();
+    }
+  }
+  if (Array.isArray(cfg.gallery)) renderGallery(cfg.gallery);
+  renderSlots();
+  renderRebook();
+  update();
+}
+if (BACKEND_URL) {
+  try { applyConfig(JSON.parse(localStorage.getItem(CONFIG_KEY) || "null")); } catch { /* nothing remembered */ }
+  fetch(`${BACKEND_URL}?action=config`).then((r) => r.json()).then((res) => {
+    if (!res || !res.ok || !res.config) return;
+    applyConfig(res.config);
+    try { localStorage.setItem(CONFIG_KEY, JSON.stringify(res.config)); } catch { /* storage blocked */ }
+  }).catch(() => { /* offline: built-in prices and photos stay */ });
+}
 
 // The barbers' portal is a separate page on the public website, not part of the Claude demo
 if (window.claude) $("portal-link").hidden = true;

@@ -12,7 +12,9 @@ A customer picks a service, a day and a free time, adds their name and phone, an
 1. Edit `demo/reezy-demo.html`. It's the source for both the website and the Claude demo page.
 2. Run `sh build-site.sh` to rebuild `index.html`.
 
-Shop settings are at the top of the `<script>` in `demo/reezy-demo.html`:
+Barbers can change the price list, gallery photos and opening hours themselves in the portal (`portal.html`, Settings in the bottom menu). Those are saved in the booking system ("Site" tab of the bookings sheet; uploaded photos in the "Reezy Fxdes Gallery" Drive folder) and the website loads them when it opens.
+
+The built-in defaults, used until something is saved in Settings, are at the top of the `<script>` in `demo/reezy-demo.html` (keep `DEFAULT_SERVICES` / `DEFAULT_GALLERY` in `portal.html` in step with them):
 - `SERVICES`: names, descriptions and prices (`price: null` shows "TBA")
 - `HOURS` / `OPEN_LATE`: opening hours per day
 - `SERVICES` `minutes`: how long each service takes (not shown to clients). Times only show if the whole booking fits

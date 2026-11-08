@@ -6,6 +6,8 @@
  * - Sends a WhatsApp alert for each new booking, and a reminder 15 minutes before it,
  *   to both shop numbers (through CallMeBot)
  * - Gives the barbers' portal the list of bookings and report data (protected by a PIN)
+ * - Stores the website's price list, gallery photos and opening hours, edited from the
+ *   portal's Settings (saved in a "Site" tab; photos go to a public Google Drive folder)
  *
  * Setup steps are in backend/SETUP.md.
  * Settings (PIN, phones, emails) live in the separate "Settings" file (backend/Settings.gs).
@@ -24,6 +26,7 @@ function doGet(e) {
   const p = (e && e.parameter) || {};
   try {
     if (p.action === "slots") return json_({ ok: true, booked: bookedSlots_(p.date) });
+    if (p.action === "config") return json_({ ok: true, config: getConfig_() });
     if (p.action === "list") {
       if (p.pin !== PORTAL_PIN) return json_({ ok: false, error: "pin" });
       return json_({ ok: true, bookings: listBookings_() });
@@ -45,6 +48,12 @@ function doPost(e) {
     if (body.action === "status") {
       if (body.pin !== PORTAL_PIN) return json_({ ok: false, error: "pin" });
       return json_(setStatus_(body.id, body.status));
+    }
+    if (body.action === "saveConfig" || body.action === "upload" || body.action === "deletePhoto") {
+      if (body.pin !== PORTAL_PIN) return json_({ ok: false, error: "pin" });
+      if (body.action === "saveConfig") return json_(saveConfig_(body.config));
+      if (body.action === "upload") return json_(uploadPhoto_(body));
+      return json_(deletePhoto_(body.id));
     }
     return json_({ ok: false, error: "unknown_action" });
   } catch (err) {
@@ -172,6 +181,158 @@ function sendReminders() {
       sh.getRange(r._row, HEADERS.indexOf("reminded") + 1).setValue("yes");
     }
   });
+}
+
+// ---------- Website settings: price list, gallery, opening hours ----------
+// Each section is saved as JSON in the "Site" tab (column A = section, column B = JSON).
+// A section that was never saved is left out, and the website keeps its built-in version.
+
+const SITE_SHEET = "Site";
+const CONFIG_SECTIONS = ["services", "gallery", "hours"];
+const PHOTO_FOLDER = "Reezy Fxdes Gallery";
+
+function siteSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(SITE_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(SITE_SHEET);
+    sh.getRange("A:B").setNumberFormat("@");
+    sh.appendRow(["section", "json"]);
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+function getConfig_() {
+  const cache = CacheService.getScriptCache();
+  const hit = cache.get("config");
+  if (hit) return JSON.parse(hit);
+  const out = {};
+  siteSheet_().getDataRange().getValues().slice(1).forEach((r) => {
+    if (CONFIG_SECTIONS.indexOf(String(r[0])) < 0) return;
+    try { out[r[0]] = JSON.parse(String(r[1])); } catch (err) { /* skip a damaged cell */ }
+  });
+  cache.put("config", JSON.stringify(out), 600);
+  return out;
+}
+
+function saveConfig_(config) {
+  config = config || {};
+  const clean = {};
+  try {
+    if (config.services !== undefined) clean.services = cleanServices_(config.services);
+    if (config.gallery !== undefined) clean.gallery = cleanGallery_(config.gallery);
+    if (config.hours !== undefined) clean.hours = cleanHours_(config.hours);
+  } catch (err) {
+    return { ok: false, error: "invalid", message: String(err.message || err) };
+  }
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const sh = siteSheet_();
+    const keys = sh.getDataRange().getValues().map((r) => String(r[0]));
+    Object.keys(clean).forEach((k) => {
+      const json = JSON.stringify(clean[k]);
+      const at = keys.indexOf(k);
+      if (at > 0) sh.getRange(at + 1, 2).setValue(json);
+      else { sh.appendRow([k, json]); keys.push(k); }
+    });
+    SpreadsheetApp.flush();
+    CacheService.getScriptCache().remove("config");
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true, config: getConfig_() };
+}
+
+function text_(v, max) { return str_(v).replace(/\s+/g, " ").slice(0, max); }
+
+function cleanServices_(list) {
+  if (!Array.isArray(list) || !list.length || list.length > 60) throw new Error("The price list needs 1 to 60 services.");
+  return list.map((s, i) => {
+    const name = text_(s.name, 80), group = text_(s.group, 30) || "Services";
+    const price = Math.round(Number(s.price) * 100) / 100;
+    const minutes = Math.round(Number(s.minutes) / 15) * 15;
+    if (!name) throw new Error("Service " + (i + 1) + " needs a name.");
+    if (!(price >= 0 && price <= 10000)) throw new Error(name + " needs a price.");
+    if (!(minutes >= 15 && minutes <= 240)) throw new Error(name + " needs a length between 15 minutes and 4 hours.");
+    const o = { group: group, name: name, price: price, minutes: minutes };
+    if (text_(s.unit, 20)) o.unit = text_(s.unit, 20);
+    if (text_(s.note, 120)) o.note = text_(s.note, 120);
+    if (s.needsAddress) o.needsAddress = true;
+    return o;
+  });
+}
+
+function cleanGallery_(list) {
+  if (!Array.isArray(list) || list.length > 60) throw new Error("The gallery can hold up to 60 photos.");
+  return list.map((p) => {
+    const src = str_(p.src).slice(0, 300);
+    if (!/^assets\/gallery\/[\w.-]+$/.test(src) && !/^https:\/\/lh3\.googleusercontent\.com\/d\/[\w-]+(=[\w-]+)?$/.test(src)) {
+      throw new Error("A gallery photo has an unknown address.");
+    }
+    const o = { src: src, caption: text_(p.caption, 100) || "Fresh cut at VIP Classic" };
+    if (/^[\w-]{10,}$/.test(str_(p.id))) o.id = str_(p.id);
+    return o;
+  });
+}
+
+function cleanHours_(hours) {
+  const out = {};
+  for (let d = 0; d < 7; d++) {
+    const h = hours && hours[d];
+    if (!h) { out[d] = null; continue; }
+    const open = str_(h.open), close = str_(h.close);
+    if (!/^\d{2}:\d{2}$/.test(open) || !/^\d{2}:\d{2}$/.test(close) || mins_(open) >= mins_(close)) {
+      throw new Error("Opening hours: closing time must be after opening time.");
+    }
+    out[d] = { open: open, close: close };
+  }
+  return out;
+}
+
+function photoFolder_() {
+  const props = PropertiesService.getScriptProperties();
+  const id = props.getProperty("PHOTO_FOLDER_ID");
+  if (id) { try { return DriveApp.getFolderById(id); } catch (err) { /* deleted: make a new one */ } }
+  const folder = DriveApp.createFolder(PHOTO_FOLDER);
+  props.setProperty("PHOTO_FOLDER_ID", folder.getId());
+  return folder;
+}
+
+// A photo from the portal (already shrunk by the phone), saved to Drive and shared view-only
+function uploadPhoto_(b) {
+  const mime = str_(b.mime);
+  const data = str_(b.data);
+  if (["image/jpeg", "image/png", "image/webp"].indexOf(mime) < 0) return { ok: false, error: "invalid", message: "Only photos can be added." };
+  if (!data || data.length > 8000000) return { ok: false, error: "invalid", message: "That photo is too large." };
+  const name = "cut-" + Utilities.formatDate(new Date(), TZ, "yyyyMMdd-HHmmss") + "-" + Utilities.getUuid().slice(0, 4) + ".jpg";
+  const blob = Utilities.newBlob(Utilities.base64Decode(data), mime, name);
+  const file = photoFolder_().createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return { ok: true, id: file.getId(), src: "https://lh3.googleusercontent.com/d/" + file.getId() + "=w1600" };
+}
+
+// Moves an uploaded photo to the Drive bin (only photos in the gallery folder)
+function deletePhoto_(id) {
+  id = str_(id);
+  if (!/^[\w-]{10,}$/.test(id)) return { ok: false, error: "invalid" };
+  try {
+    const file = DriveApp.getFileById(id);
+    const folderId = photoFolder_().getId();
+    let inFolder = false;
+    const parents = file.getParents();
+    while (parents.hasNext()) if (parents.next().getId() === folderId) inFolder = true;
+    if (inFolder) file.setTrashed(true);
+  } catch (err) { /* already gone */ }
+  return { ok: true };
+}
+
+// Run once from the editor after updating, so Google asks for the new Drive permission
+function authorize() {
+  photoFolder_();
+  siteSheet_();
+  console.log("Ready: gallery folder and Site tab are set up.");
 }
 
 // ---------- One-time setup: run this once from the Apps Script editor ----------
