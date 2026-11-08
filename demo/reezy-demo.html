@@ -217,6 +217,16 @@ p { margin: 0; }
 .barber[aria-pressed="true"] { background: var(--black); color: var(--white); }
 .barber[aria-pressed="true"] span { color: var(--grey); }
 
+/* "The other barber is free" prompt under the time picker */
+.suggest {
+  border: 1px solid var(--black); background: var(--black); color: var(--white);
+  padding: 1rem 1.1rem; display: grid; gap: 0.8rem; margin-top: 0.25rem;
+}
+.suggest__text { font-size: 0.95rem; line-height: 1.45; }
+.suggest__text strong { font-weight: 600; }
+.suggest .btn { justify-self: start; }
+@media (max-width: 760px) { .suggest .btn { justify-self: stretch; } }
+
 .rebook {
   display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem 2rem;
   border: 1px solid var(--black); padding: 1.25rem 1.5rem; margin-bottom: 2rem;
@@ -447,6 +457,10 @@ p { margin: 0; }
         <div class="field full">
           <label class="label" for="time">Time</label>
           <select id="time" name="time"></select>
+          <div class="suggest" id="suggest" role="status" hidden>
+            <p class="suggest__text" id="suggest-text"></p>
+            <button type="button" class="btn btn--small" id="suggest-switch"></button>
+          </div>
         </div>
 
         <div class="field">
@@ -609,10 +623,16 @@ const endTime = (time, minutes) => toHHMM(toMinutes(time) + minutes);
 
 // True if the chosen barber already has a booking that overlaps this start time and length
 function isTaken(date, time, minutes = serviceMinutes(state.service)) {
-  if (!state.barber) return false;
+  return !!state.barber && isBusy(state.barber, date, time, minutes);
+}
+// The other barbers who are free for this whole booking
+function freeOthers(date, time, minutes = serviceMinutes(state.service)) {
+  return BARBERS.filter((name) => name !== state.barber && !isBusy(name, date, time, minutes));
+}
+function isBusy(barber, date, time, minutes = serviceMinutes(state.service)) {
   const start = toMinutes(time), end = start + minutes;
   for (const b of booked.values()) {
-    if (b.date !== date || b.barber !== state.barber) continue;
+    if (b.date !== date || b.barber !== barber) continue;
     const bStart = toMinutes(b.time), bEnd = bStart + (Number(b.minutes) || DEFAULT_MINUTES);
     if (start < bEnd && bStart < end) return true;
   }
@@ -716,14 +736,58 @@ function renderSlots() {
   sel.add(first);
   if (!state.service) { first.text = "Pick a service first"; state.time = ""; return; }
   if (!state.date) { first.text = "Pick a day first"; return; }
-  if (!state.barber) { first.text = "Pick a barber first"; state.time = ""; return; }
-  const free = slotsFor(state.date).filter((t) => !isTaken(state.date, t));
-  if (!free.length) { first.text = `${state.barber} is fully booked on this day`; state.time = ""; return; }
-  first.text = "Choose a time";
-  free.forEach((t) => sel.add(new Option(to12h(t), t)));
-  if (state.time && !free.includes(state.time)) state.time = "";
+  if (!state.barber) { first.text = "Pick a barber first"; state.time = ""; renderSuggest(); return; }
+  // Every time at least one barber is free. Times the chosen barber is busy say who is free instead.
+  const shown = [];
+  let mineFree = 0;
+  slotsFor(state.date).forEach((t) => {
+    if (!isTaken(state.date, t)) { mineFree++; shown.push(t); sel.add(new Option(to12h(t), t)); return; }
+    const others = freeOthers(state.date, t);
+    if (others.length) { shown.push(t); sel.add(new Option(`${to12h(t)} · ${others[0]} is free`, t)); }
+  });
+  first.text = !shown.length ? "Fully booked on this day" : mineFree ? "Choose a time" : `${state.barber} is fully booked · times with other barbers`;
+  if (state.time && !shown.includes(state.time)) state.time = "";
   sel.value = state.time;
+  renderSuggest();
 }
+
+// Push the client to another barber when theirs is busy at the time they want (or all day)
+let suggestTo = "";
+function renderSuggest() {
+  const box = $("suggest");
+  suggestTo = "";
+  if (state.service && state.date && state.barber) {
+    if (state.time && isTaken(state.date, state.time)) {
+      const others = freeOthers(state.date, state.time);
+      if (others.length) {
+        suggestTo = others[0];
+        $("suggest-text").innerHTML = `<strong>${esc(state.barber)}</strong> is busy with another client at ${esc(to12h(state.time))}. ` +
+          `<strong>${esc(suggestTo)}</strong> is free at that time, so you can keep your time by booking with ${esc(suggestTo)}.`;
+        $("suggest-switch").textContent = `Book with ${suggestTo} at ${to12h(state.time)}`;
+      }
+    } else if (!state.time) {
+      const day = slotsFor(state.date);
+      const mineFree = day.some((t) => !isTaken(state.date, t));
+      const alt = !mineFree && BARBERS.find((name) => name !== state.barber && day.some((t) => !isBusy(name, state.date, t)));
+      if (alt) {
+        suggestTo = alt;
+        $("suggest-text").innerHTML = `<strong>${esc(state.barber)}</strong> is fully booked on this day. ` +
+          `<strong>${esc(alt)}</strong> still has free times.`;
+        $("suggest-switch").textContent = `See ${alt}'s free times`;
+      }
+    }
+  }
+  box.hidden = !suggestTo;
+}
+$("suggest-switch").addEventListener("click", () => {
+  if (!suggestTo) return;
+  state.barber = suggestTo;
+  $("form-error").textContent = "";
+  renderBarbers();
+  renderSlots();
+  update();
+  $("time").focus({ preventScroll: true });
+});
 
 // Keep free times current while the page is open (other clients book, barbers cancel)
 setInterval(() => { if ($("done").hidden) loadBackendSlots(state.date); }, 60000);
@@ -739,7 +803,7 @@ async function loadBackendSlots(date) {
     if (state.date === date) { renderSlots(); update(); }
   } catch { /* offline or backend down: times show as free; the backend still refuses double bookings */ }
 }
-$("time").addEventListener("change", () => { state.time = $("time").value; update(); });
+$("time").addEventListener("change", () => { state.time = $("time").value; renderSuggest(); update(); });
 
 // Form fields
 const field = (id) => $(id).value.trim();
@@ -786,7 +850,7 @@ $("send").textContent = SEND_LABEL;
 function update() {
   const parts = [state.service, state.barber && `with ${state.barber}`, state.date && longDate(state.date), state.time && to12h(state.time)].filter(Boolean);
   $("summary").textContent = parts.length ? parts.join(" · ") : "Choose a service, barber, day and time";
-  const ready = missing().length === 0;
+  const ready = missing().length === 0 && !isTaken(state.date, state.time);
   const send = $("send");
   send.href = ready ? waLink() : "#book";
   send.setAttribute("aria-disabled", String(!ready));
@@ -868,8 +932,11 @@ $("send").addEventListener("click", async (e) => {
   }
   if (isTaken(state.date, state.time)) {
     e.preventDefault();
-    $("form-error").textContent = `${state.barber} was just booked at that time. Pick another free time.`;
-    state.time = "";
+    const others = freeOthers(state.date, state.time);
+    $("form-error").textContent = others.length
+      ? `${state.barber} is busy at that time. Book with ${others[0]} to keep your time, or pick another time.`
+      : `${state.barber} is busy at that time. Pick another free time.`;
+    if (!others.length) state.time = "";
     renderSlots();
     update();
     return;
@@ -903,8 +970,12 @@ $("send").addEventListener("click", async (e) => {
   if (res && res.ok) { booked.set(key, booking); showDone("saved"); }
   else if (res && res.error === "taken") {
     booked.set(key, booking);
-    $("form-error").textContent = `${booking.barber} was just booked at that time. Pick another free time.`;
-    state.time = "";
+    // Keep the time if another barber is free then, so the client can switch with one tap
+    const others = freeOthers(booking.date, booking.time);
+    $("form-error").textContent = others.length
+      ? `${booking.barber} was just booked at that time. ${others[0]} is free then. Tap "Book with ${others[0]}" above.`
+      : `${booking.barber} was just booked at that time. Pick another free time.`;
+    if (!others.length) state.time = "";
     renderSlots();
     update();
   } else showDone("fallback");
