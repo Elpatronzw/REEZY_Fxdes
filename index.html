@@ -174,6 +174,10 @@ p { margin: 0; }
 /* Services */
 .price-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
 .price-group { border: 1px solid var(--line); padding: 0.75rem 1.5rem 0.5rem; min-width: 0; }
+/* A group left alone on the last row (Home Visit) spans the full width */
+.price-group:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.service__note { display: block; color: var(--grey); font-size: 0.85rem; margin-top: 0.2rem; }
+.service__unit { font-family: var(--body); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--grey); margin-left: 0.35rem; }
 .price-group__title {
   font-size: 1.5rem; letter-spacing: 0.2em; text-align: center;
   background: var(--white); color: var(--black); padding: 0.45rem 1rem 0.3rem; margin: 0 -0.75rem 0.5rem;
@@ -469,7 +473,7 @@ p { margin: 0; }
           <input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="+263 ...">
         </div>
         <div class="field full">
-          <label class="label" for="notes">Notes (optional)</label>
+          <label class="label" for="notes" id="notes-label">Notes (optional)</label>
           <textarea id="notes" name="notes" rows="3" placeholder="Style reference, dye colour..."></textarea>
         </div>
 
@@ -581,6 +585,9 @@ const SERVICES = [
   { group: "Ladies", name: "Ladies", price: 5, minutes: 45 },
   { group: "Ladies", name: "Ladies Cut + Dye / Tint / Bleach", price: 10, minutes: 60 },
   { group: "Ladies", name: "Ladies + Curls + Tint", price: 15, minutes: 60 },
+  // Home visit: the barber travels to the client, so it blocks the barber for longer
+  { group: "Home Visit", name: "Home Visit", price: 20, unit: "per head", minutes: 120,
+    note: "We come to you. Any cut, priced per person.", needsAddress: true },
 ];
 const CURRENCY = "$";
 // Open every day 6:30am – 10:30pm. A booking must finish by closing time.
@@ -594,7 +601,7 @@ const DAYS_AHEAD = 14;
 // ==== End of settings ====
 
 const $ = (id) => document.getElementById(id);
-const serviceLabel = (s) => (s.price == null ? s.name : `${s.name} (${formatPrice(s.price)})`);
+const serviceLabel = (s) => (s.price == null ? s.name : `${s.name} (${formatPrice(s.price)}${s.unit ? " " + s.unit : ""})`);
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const formatPrice = (p) => (p == null ? "TBA" : CURRENCY + p);
 const pad = (n) => String(n).padStart(2, "0");
@@ -629,13 +636,13 @@ function isTaken(date, time, minutes = serviceMinutes(state.service)) {
 let store = null;                  // db collection, when the viewer has it
 let canWrite = false;
 
-// Price list + service dropdown, grouped (Gents, Ladies)
+// Price list + service dropdown, grouped (Gents, Ladies, Home Visit)
 [...new Set(SERVICES.map((s) => s.group))].forEach((group) => {
   const items = SERVICES.filter((s) => s.group === group);
   const box = document.createElement("div");
   box.className = "price-group";
   box.innerHTML = `<h3 class="price-group__title">${esc(group)}</h3><ul class="services">${items
-    .map((s) => `<li class="service"><span class="service__name">${esc(s.name)}</span><span class="service__price">${formatPrice(s.price)}</span></li>`)
+    .map((s) => `<li class="service"><span class="service__name">${esc(s.name)}${s.note ? `<span class="service__note">${esc(s.note)}</span>` : ""}</span><span class="service__price">${formatPrice(s.price)}${s.unit ? `<span class="service__unit">${esc(s.unit)}</span>` : ""}</span></li>`)
     .join("")}</ul>`;
   $("services-list").appendChild(box);
 
@@ -751,7 +758,14 @@ $("time").addEventListener("change", () => { state.time = $("time").value; updat
 
 // Form fields
 const field = (id) => $(id).value.trim();
-$("service").addEventListener("change", () => { state.service = $("service").value; renderSlots(); update(); });
+// Home visits need the client's address: the notes box becomes a required address box
+const needsAddress = () => !!(SERVICES.find((s) => serviceLabel(s) === state.service) || {}).needsAddress;
+function renderNotesField() {
+  const home = needsAddress();
+  $("notes-label").textContent = home ? "Your address (where we should come)" : "Notes (optional)";
+  $("notes").placeholder = home ? "House number, street, area, and any directions" : "Style reference, dye colour...";
+}
+$("service").addEventListener("change", () => { state.service = $("service").value; renderNotesField(); renderSlots(); update(); });
 ["name", "phone", "notes"].forEach((id) => $(id).addEventListener("input", update));
 
 function missing() {
@@ -762,6 +776,7 @@ function missing() {
   if (!state.time) m.push("a time");
   if (!field("name")) m.push("your name");
   if (!field("phone")) m.push("your phone number");
+  if (needsAddress() && !field("notes")) m.push("your address");
   return m;
 }
 
@@ -776,7 +791,7 @@ function waLink() {
     `Date: ${longDate(state.date)}`,
     `Time: ${to12h(state.time)}`,
   ];
-  if (field("notes")) lines.push(`Notes: ${field("notes")}`);
+  if (field("notes")) lines.push(`${needsAddress() ? "Address" : "Notes"}: ${field("notes")}`);
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
 }
 
@@ -821,9 +836,9 @@ function showDone(mode) {
   $("done-text").textContent = text;
   const rows = [
     ["Service", state.service], ["Barber", state.barber],
-    ["Date", longDate(state.date)], ["Time", to12h(state.time)], ["Where", ADDRESS],
+    ["Date", longDate(state.date)], ["Time", to12h(state.time)], ["Where", needsAddress() ? field("notes") : ADDRESS],
   ];
-  $("done-details").innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}${k === "Where"
+  $("done-details").innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}${k === "Where" && !needsAddress()
     ? ` · <a href="${esc(directionsUrl())}" target="_blank" rel="noopener">Get directions</a>` : ""}</dd>`).join("");
   $("done-info").hidden = mode !== "saved";
   $("done").querySelector(".done__check").textContent = mode === "saved" ? "✓" : "!";
@@ -851,7 +866,7 @@ function calendarLink(mode) {
     `UID:${Date.now()}@reezyfxdes`, `DTSTART;TZID=Africa/Harare:${stamp(h, mi)}`,
     `DTEND;TZID=Africa/Harare:${stamp(Math.floor(end / 60), end % 60)}`,
     `SUMMARY:${state.service} with ${state.barber} - Reezy Fxdes`,
-    `LOCATION:${ADDRESS}`, `DESCRIPTION:Booked at Reezy Fxdes / VIP Classic Barbershop. WhatsApp +263719515630`,
+    `LOCATION:${(needsAddress() ? field("notes") : ADDRESS).replace(/[\r\n]+/g, ", ").replace(/([,;])/g, "\\$1")}`, `DESCRIPTION:Booked at Reezy Fxdes / VIP Classic Barbershop. WhatsApp +263719515630`,
     "BEGIN:VALARM", "TRIGGER:-PT30M", "ACTION:DISPLAY", "DESCRIPTION:Haircut in 30 minutes", "END:VALARM",
     "END:VEVENT", "END:VCALENDAR",
   ].join("\r\n");
@@ -913,6 +928,7 @@ $("send").addEventListener("click", async (e) => {
 $("done-new").addEventListener("click", () => {
   $("booking-form").reset();
   state.service = ""; state.time = "";
+  renderNotesField();
   $("done").hidden = true;
   $("booking-form").hidden = false;
   renderSlots();
@@ -952,6 +968,7 @@ $("rebook-go").addEventListener("click", () => {
   $("name").value = c.name || "";
   $("phone").value = c.phone || "";
   if ([...$("service").options].some((o) => o.value === c.service)) { $("service").value = c.service; state.service = c.service; }
+  renderNotesField();
   if (BARBERS.includes(c.barber)) state.barber = c.barber;
   renderBarbers();
   const free = state.date && slotsFor(state.date).includes(c.time) && !isTaken(state.date, c.time);
