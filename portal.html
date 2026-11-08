@@ -129,6 +129,28 @@ main { padding-block: 1.25rem 3rem; }
 .item.is-soon { border-color: var(--alert); box-shadow: inset 4px 0 0 var(--alert); }
 .empty { border: 1px dashed var(--line); padding: 2rem 1rem; text-align: center; color: var(--grey); }
 
+/* Reports */
+.btn--ghost { background: transparent; color: var(--white); border-color: var(--white); width: 100%; gap: 0.5rem; }
+.btn--ghost:hover { background: var(--white); color: var(--black); }
+.back { justify-self: start; background: none; border: 0; color: var(--grey); font: 600 0.75rem var(--body); text-transform: uppercase; letter-spacing: 0.12em; cursor: pointer; padding: 0.5rem 0; min-height: 40px; }
+.back:hover { color: var(--white); }
+.period { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 0.5rem; }
+.period .icon-btn { width: 44px; height: 44px; }
+.period .icon-btn:disabled { opacity: 0.3; cursor: default; }
+.period__label { text-align: center; font-family: var(--display); font-size: 1.45rem; letter-spacing: 0.04em; line-height: 1.1; }
+.rsec { display: grid; gap: 0.5rem; }
+.rsec h2 { font-size: 1.35rem; color: var(--grey); }
+.rtable-wrap { overflow-x: auto; border: 1px solid var(--line); }
+.rtable { width: 100%; border-collapse: collapse; background: var(--card); font-variant-numeric: tabular-nums; }
+.rtable th, .rtable td { padding: 0.65rem 0.7rem; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.rtable th:first-child, .rtable td:first-child { text-align: left; white-space: normal; }
+.rtable thead th { font-size: 0.66rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--grey); }
+.rtable tbody tr:last-child td { border-bottom: 0; }
+.rtable tfoot td { background: var(--white); color: var(--black); font-weight: 600; border-bottom: 0; }
+.rtable .money { font-family: var(--display); font-size: 1.25rem; letter-spacing: 0.03em; }
+.rtable tfoot .money { font-size: 1.4rem; }
+.note { border-left: 3px solid var(--alert); padding: 0.6rem 0.8rem; background: var(--card); font-size: 0.9rem; }
+
 @media (max-width: 420px) {
   .brand span { display: none; }
 }
@@ -186,12 +208,37 @@ main { padding-block: 1.25rem 3rem; }
       <div class="stat"><strong id="stat-week">0</strong><span>Next 7 days</span></div>
     </div>
 
+    <button type="button" class="btn btn--ghost" id="open-reports">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+      View reports
+    </button>
+
     <div class="filters">
       <div class="seg" id="barber-filter" role="group" aria-label="Barber"></div>
       <div class="seg" id="view-filter" role="group" aria-label="Show"></div>
     </div>
 
     <div id="list"></div>
+  </section>
+
+  <section id="reports" class="app" hidden>
+    <button type="button" class="back" id="close-reports">‹ Back to bookings</button>
+    <div class="head">
+      <h1>Reports</h1>
+      <p class="updated muted" id="report-updated"></p>
+    </div>
+    <div class="seg" id="period-filter" role="group" aria-label="Report period"></div>
+    <div class="period">
+      <button type="button" class="icon-btn" id="period-prev" aria-label="Previous period">‹</button>
+      <p class="period__label" id="period-label"></p>
+      <button type="button" class="icon-btn" id="period-next" aria-label="Next period">›</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><strong id="rep-cuts">0</strong><span>Haircuts</span></div>
+      <div class="stat"><strong id="rep-total">$0</strong><span>Total</span></div>
+      <div class="stat"><strong id="rep-upcoming">0</strong><span>Still to come</span></div>
+    </div>
+    <div id="report-body" class="app"></div>
   </section>
 </main>
 
@@ -231,7 +278,8 @@ function show(which) {
   $("not-connected").hidden = which !== "none";
   $("login").hidden = which !== "login";
   $("app").hidden = which !== "app";
-  $("top-btns").hidden = which !== "app";
+  $("reports").hidden = which !== "reports";
+  $("top-btns").hidden = which !== "app" && which !== "reports";
 }
 
 async function load() {
@@ -415,9 +463,131 @@ $("alerts").addEventListener("click", async () => {
 
 $("refresh").addEventListener("click", async () => {
   $("refresh").classList.add("is-spinning");
-  await load();
+  await (!$("reports").hidden ? loadReport() : load());
   $("refresh").classList.remove("is-spinning");
 });
+
+// ---------- Reports: haircuts done and money taken, per day / week / month and per barber ----------
+// Every booking the system received counts as done unless the barber cancelled it (the backend
+// already leaves cancelled ones out). Prices come from the service name, e.g. "Fade ($5)".
+let period = "day";
+let offset = 0;          // 0 = this day/week/month, -1 = the one before, ...
+let reportSeq = 0;
+const priceOf = (service) => { const m = String(service).match(/\(\$(\d+(?:\.\d+)?)/); return m ? Number(m[1]) : 0; };
+const serviceName = (service) => String(service).replace(/\s*\(\$[^)]*\)\s*$/, "");
+const money = (n) => "$" + (Number.isInteger(n) ? n : n.toFixed(2));
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+function periodRange() {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+  const fmt = (x, o) => x.toLocaleDateString("en-GB", o);
+  if (period === "day") {
+    const day = new Date(y, m, d + offset);
+    const label = (offset === 0 ? "Today · " : offset === -1 ? "Yesterday · " : "") + fmt(day, { weekday: "short", day: "numeric", month: "short" });
+    return { from: isoDate(day), to: isoDate(day), label };
+  }
+  if (period === "week") {   // Monday to Sunday
+    const mon = new Date(y, m, d - ((now.getDay() + 6) % 7) + 7 * offset);
+    const sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6);
+    const label = (offset === 0 ? "This week · " : "") + `${fmt(mon, { day: "numeric", month: "short" })} – ${fmt(sun, { day: "numeric", month: "short" })}`;
+    return { from: isoDate(mon), to: isoDate(sun), label };
+  }
+  const first = new Date(y, m + offset, 1), last = new Date(y, m + offset + 1, 0);
+  return { from: isoDate(first), to: isoDate(last), label: fmt(first, { month: "long", year: "numeric" }) };
+}
+
+function openReports() {
+  show("reports");
+  window.scrollTo(0, 0);
+  loadReport();
+}
+
+async function loadReport() {
+  chips($("period-filter"), [["day", "Day"], ["week", "Week"], ["month", "Month"]], period, (v) => { period = v; offset = 0; loadReport(); });
+  const range = periodRange();
+  $("period-label").textContent = range.label;
+  $("period-next").disabled = offset >= 0;
+  $("report-updated").textContent = "Loading…";
+  const seq = ++reportSeq;
+  try {
+    const res = await (await fetch(`${BACKEND_URL}?action=report&pin=${encodeURIComponent(pin)}&from=${range.from}&to=${range.to}`)).json();
+    if (seq !== reportSeq) return;   // a newer period was picked meanwhile
+    if (!res.ok && res.error === "pin") { pin = ""; store.del("reezy:pin"); show("login"); $("login-error").textContent = "That PIN isn't right."; return; }
+    if (!res.ok || !Array.isArray(res.rows)) {
+      $("report-updated").textContent = "";
+      $("report-body").innerHTML = `<div class="empty">Reports need the latest booking system code. Ask the admin to update and redeploy the Apps Script.</div>`;
+      return;
+    }
+    renderReport(res.rows, range);
+    $("report-updated").textContent = "Updated " + new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    if (seq === reportSeq) $("report-updated").textContent = "Couldn't reach the booking system.";
+  }
+}
+
+function renderReport(rows, range) {
+  const now = new Date();
+  const done = rows.filter((r) => r.status !== "cancelled");
+  const upcoming = done.filter((r) => startOf(r) > now);
+  const sum = (list) => list.reduce((t, r) => t + priceOf(r.service), 0);
+  const names = [...new Set([...BARBERS, ...done.map((r) => r.barber)])];
+  const byBarber = names.map((name) => { const l = done.filter((r) => r.barber === name); return { name, cuts: l.length, total: sum(l) }; });
+
+  $("rep-cuts").textContent = done.length;
+  $("rep-total").textContent = money(sum(done));
+  $("rep-upcoming").textContent = upcoming.length;
+
+  const table = (head, body, foot) => `<div class="rtable-wrap"><table class="rtable">
+    <thead><tr>${head.map((h) => `<th scope="col">${esc(h)}</th>`).join("")}</tr></thead>
+    <tbody>${body.map((r) => `<tr>${r.map((c, i) => `<td${c && c.money ? ' class="money"' : ""}>${esc(c && c.money ? c.text : c)}</td>`).join("")}</tr>`).join("")}</tbody>
+    ${foot ? `<tfoot><tr>${foot.map((c) => `<td${c && c.money ? ' class="money"' : ""}>${esc(c && c.money ? c.text : c)}</td>`).join("")}</tr></tfoot>` : ""}
+  </table></div>`;
+  const $m = (n) => ({ money: true, text: money(n) });
+
+  let html = "";
+  if (upcoming.length) {
+    html += `<p class="note">Includes ${plural(upcoming.length, "booking", "bookings")} later in this period that ${upcoming.length === 1 ? "hasn't" : "haven't"} happened yet (${money(sum(upcoming))}). ` +
+      `Cancel ${upcoming.length === 1 ? "it" : "any"} in Bookings if the client doesn't come.</p>`;
+  }
+
+  html += `<section class="rsec"><h2>By barber</h2>${table(
+    ["Barber", "Haircuts", "Total"],
+    byBarber.map((b) => [b.name, b.cuts, $m(b.total)]),
+    ["Total", done.length, $m(sum(done))]
+  )}</section>`;
+
+  if (done.length) {
+    const svc = new Map();
+    done.forEach((r) => { const k = serviceName(r.service); const s = svc.get(k) || { cuts: 0, total: 0 }; s.cuts++; s.total += priceOf(r.service); svc.set(k, s); });
+    html += `<section class="rsec"><h2>By service</h2>${table(
+      ["Service", "Haircuts", "Total"],
+      [...svc].sort((a, b) => b[1].total - a[1].total).map(([k, s]) => [k, s.cuts, $m(s.total)]),
+      ["Total", done.length, $m(sum(done))]
+    )}</section>`;
+  }
+
+  if (period !== "day" && done.length) {
+    const days = [...new Set(done.map((r) => r.date))].sort();
+    html += `<section class="rsec"><h2>By day</h2>${table(
+      ["Day", ...names, "Total"],
+      days.map((day) => {
+        const l = done.filter((r) => r.date === day);
+        return [new Date(day + "T00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }),
+          ...names.map((n) => l.filter((r) => r.barber === n).length), $m(sum(l))];
+      }),
+      ["Total", ...names.map((n) => done.filter((r) => r.barber === n).length), $m(sum(done))]
+    )}</section>`;
+  }
+
+  if (!done.length) html = `<div class="empty">No haircuts in this period yet.</div>` + html;
+  $("report-body").innerHTML = html;
+}
+
+$("open-reports").addEventListener("click", openReports);
+$("close-reports").addEventListener("click", () => { show("app"); render(); window.scrollTo(0, 0); });
+$("period-prev").addEventListener("click", () => { offset--; loadReport(); });
+$("period-next").addEventListener("click", () => { if (offset < 0) { offset++; loadReport(); } });
 
 $("login").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -431,14 +601,14 @@ $("login").addEventListener("submit", async (e) => {
 });
 
 $("logout").addEventListener("click", () => {
-  pin = ""; store.del("reezy:pin"); clearInterval(timer); $("pin").value = ""; show("login");
+  pin = ""; store.del("reezy:pin"); clearInterval(timer); clearInterval(soonTimer); $("pin").value = ""; show("login");
 });
 
 let soonTimer = null;
 function start() {
   show("app");
   clearInterval(timer); clearInterval(soonTimer);
-  timer = setInterval(load, 60000);          // refresh bookings every minute
+  timer = setInterval(() => { if ($("reports").hidden) load(); }, 60000);   // refresh bookings every minute
   soonTimer = setInterval(checkSoon, 20000); // keep "in X min" alerts current
 }
 

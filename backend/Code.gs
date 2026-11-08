@@ -5,7 +5,7 @@
  * - Refuses double bookings (same barber, with times that overlap; each service has its own length)
  * - Sends a WhatsApp alert for each new booking, and a reminder 15 minutes before it,
  *   to both shop numbers (through CallMeBot)
- * - Gives the barbers' portal the list of bookings (protected by a PIN)
+ * - Gives the barbers' portal the list of bookings and report data (protected by a PIN)
  *
  * Setup steps are in backend/SETUP.md.
  * Settings (PIN, phones, emails) live in the separate "Settings" file (backend/Settings.gs).
@@ -27,6 +27,10 @@ function doGet(e) {
     if (p.action === "list") {
       if (p.pin !== PORTAL_PIN) return json_({ ok: false, error: "pin" });
       return json_({ ok: true, bookings: listBookings_() });
+    }
+    if (p.action === "report") {
+      if (p.pin !== PORTAL_PIN) return json_({ ok: false, error: "pin" });
+      return json_({ ok: true, rows: reportRows_(p.from, p.to) });
     }
     return json_({ ok: true, service: "Reezy Fxdes bookings" });
   } catch (err) {
@@ -106,6 +110,17 @@ function listBookings_() {
     .map((r) => ({ id: r.id, date: r.date, time: r.time, minutes: minutesOf_(r.minutes), barber: r.barber, service: r.service,
                    name: r.name, phone: r.phone, notes: r.notes, status: r.status }))
     .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+}
+
+// Bookings between two dates (inclusive) for the portal's reports. No client details.
+function reportRows_(from, to) {
+  from = str_(from).slice(0, 10);
+  to = str_(to).slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) return [];
+  return rows_()
+    .filter((r) => r.date >= from && r.date <= to && r.status !== "cancelled")
+    .map((r) => ({ date: r.date, time: r.time, minutes: minutesOf_(r.minutes), barber: r.barber,
+                   service: r.service, status: r.status }));
 }
 
 function setStatus_(id, status) {
