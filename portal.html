@@ -96,6 +96,8 @@ main { padding-block: 1.25rem 3rem; }
 .item { background: var(--card); border: 1px solid var(--line); padding: 0.85rem 0.9rem; display: grid; gap: 0.4rem; min-width: 0; }
 .item__top { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
 .item__time { font-family: var(--display); font-size: 1.75rem; line-height: 1; font-variant-numeric: tabular-nums; margin-right: auto; }
+.item__end { color: var(--grey); font-size: 0.85rem; font-variant-numeric: tabular-nums; margin-right: auto; }
+.item__time:has(+ .item__end) { margin-right: 0; }
 .item__svc { font-weight: 600; overflow-wrap: anywhere; }
 .item__client { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; }
 .item__name { font-weight: 500; }
@@ -207,6 +209,8 @@ const isoDate = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getD
 const to12h = (t) => { const [h, m] = t.split(":").map(Number); return `${(h % 12) || 12}:${pad(m)} ${h < 12 ? "AM" : "PM"}`; };
 const longDate = (iso) => new Date(iso + "T00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
 const startOf = (b) => new Date(`${b.date}T${b.time}`);
+// Finish time: each service has its own length (older bookings count as 30 minutes)
+const endOf = (b) => { const [h, m] = b.time.split(":").map(Number), e = h * 60 + m + (Number(b.minutes) || 30); return `${pad(Math.floor(e / 60))}:${pad(e % 60)}`; };
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const waNumber = (p) => { let d = String(p).replace(/\D/g, ""); if (d.startsWith("0")) d = "263" + d.slice(1); return d; };
 
@@ -309,6 +313,7 @@ function itemHtml(b) {
   return `<li class="item is-${esc(b.status)}${soon ? " is-soon" : ""}" data-item="${id}">
     <div class="item__top">
       <span class="item__time">${esc(to12h(b.time))}</span>
+      <span class="item__end">to ${esc(to12h(endOf(b)))}</span>
       ${STATUS_LABEL[b.status] ? `<span class="pill pill--${esc(b.status)}">${STATUS_LABEL[b.status]}</span>` : ""}
       <span class="pill pill--barber">${esc(b.barber)}</span>
     </div>

@@ -2,7 +2,7 @@
  * Reezy Fxdes booking backend (Google Apps Script, attached to a Google Sheet).
  *
  * - Saves bookings from the website into the "Bookings" sheet
- * - Refuses double bookings (same barber, day and time)
+ * - Refuses double bookings (same barber, with times that overlap; each service has its own length)
  * - Sends a WhatsApp alert for each new booking, and a reminder 15 minutes before it,
  *   to both shop numbers (through CallMeBot)
  * - Gives the barbers' portal the list of bookings (protected by a PIN)
@@ -12,9 +12,11 @@
  */
 
 const SHEET_NAME = "Bookings";
-const HEADERS = ["id", "createdAt", "date", "time", "barber", "service", "name", "phone", "notes", "status", "reminded"];
+const HEADERS = ["id", "createdAt", "date", "time", "barber", "service", "name", "phone", "notes", "status", "reminded", "minutes"];
 const TZ = "Africa/Harare";
 const REMINDER_MINUTES = 15;
+// Length assumed for bookings saved before services had their own length
+const DEFAULT_MINUTES = 30;
 
 // ---------- Web endpoints ----------
 
@@ -57,6 +59,7 @@ function book_(b) {
     name: str_(b.name).slice(0, 80),
     phone: str_(b.phone).slice(0, 30),
     notes: str_(b.notes).slice(0, 500),
+    minutes: minutesOf_(b.minutes),
   };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(clean.date) || !/^\d{2}:\d{2}$/.test(clean.time) ||
       !clean.barber || !clean.service || !clean.name || !clean.phone) {
@@ -66,20 +69,19 @@ function book_(b) {
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
-    const taken = rows_().some((r) => r.status !== "cancelled" &&
-      r.date === clean.date && r.time === clean.time && r.barber === clean.barber);
+    const taken = rows_().some((r) => r.status !== "cancelled" && overlaps_(r, clean));
     if (taken) return { ok: false, error: "taken" };
 
     const id = Utilities.getUuid().slice(0, 8);
     const created = Utilities.formatDate(new Date(), TZ, "yyyy-MM-dd HH:mm");
     sheet_().appendRow([id, created, clean.date, clean.time, clean.barber, clean.service,
-      clean.name, clean.phone, clean.notes, "booked", ""]);
+      clean.name, clean.phone, clean.notes, "booked", "", String(clean.minutes)]);
     SpreadsheetApp.flush();
 
     notify_([
       "*New booking - Reezy Fxdes*",
       clean.service + " with " + clean.barber,
-      prettyDate_(clean.date) + " at " + pretty12h_(clean.time),
+      prettyDate_(clean.date) + ", " + prettyRange_(clean.time, clean.minutes),
       "Client: " + clean.name + " (" + clean.phone + ")",
       clean.notes ? "Notes: " + clean.notes : "",
     ].filter(String).join("\n"));
@@ -94,14 +96,14 @@ function bookedSlots_(date) {
   date = str_(date).slice(0, 10);
   return rows_()
     .filter((r) => r.date === date && r.status !== "cancelled")
-    .map((r) => ({ time: r.time, barber: r.barber }));   // no client details
+    .map((r) => ({ time: r.time, barber: r.barber, minutes: minutesOf_(r.minutes) }));   // no client details
 }
 
 function listBookings_() {
   const from = Utilities.formatDate(new Date(Date.now() - 7 * 864e5), TZ, "yyyy-MM-dd");
   return rows_()
     .filter((r) => r.date >= from)
-    .map((r) => ({ id: r.id, date: r.date, time: r.time, barber: r.barber, service: r.service,
+    .map((r) => ({ id: r.id, date: r.date, time: r.time, minutes: minutesOf_(r.minutes), barber: r.barber, service: r.service,
                    name: r.name, phone: r.phone, notes: r.notes, status: r.status }))
     .sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
 }
@@ -119,8 +121,7 @@ function setStatus_(id, status) {
 
     // Restoring a cancelled booking: only if nobody else has taken that time since
     if (status === "booked" && prev === "cancelled") {
-      const taken = all.some((r) => r.id !== row.id && r.status !== "cancelled" &&
-        r.date === row.date && r.time === row.time && r.barber === row.barber);
+      const taken = all.some((r) => r.id !== row.id && r.status !== "cancelled" && overlaps_(r, row));
       if (taken) return { ok: false, error: "taken" };
     }
 
@@ -128,7 +129,7 @@ function setStatus_(id, status) {
     SpreadsheetApp.flush();
 
     const what = row.service + " with " + row.barber + "\n" +
-      prettyDate_(row.date) + " at " + pretty12h_(row.time) + "\n" +
+      prettyDate_(row.date) + ", " + prettyRange_(row.time, minutesOf_(row.minutes)) + "\n" +
       "Client: " + row.name + " (" + row.phone + ")";
     if (status === "cancelled") notify_("*Barber cancelled - Reezy Fxdes*\n" + what + "\nThis time is free again on the website.");
     if (status === "booked" && prev === "cancelled") notify_("*Booking restored - Reezy Fxdes*\n" + what);
@@ -150,7 +151,7 @@ function sendReminders() {
     if (minsUntil > 0 && minsUntil <= REMINDER_MINUTES + 1) {
       notify_([
         "*Reminder - booking in " + Math.round(minsUntil) + " min*",
-        r.service + " with " + r.barber + " at " + pretty12h_(r.time),
+        r.service + " with " + r.barber + ", " + prettyRange_(r.time, minutesOf_(r.minutes)),
         "Client: " + r.name + " (" + r.phone + ")",
       ].join("\n"));
       sh.getRange(r._row, HEADERS.indexOf("reminded") + 1).setValue("yes");
@@ -194,7 +195,36 @@ function sheet_() {
     sh.appendRow(HEADERS);
     sh.setFrozenRows(1);
   }
+  // Sheets made before a column was added: add the missing headers at the end
+  const head = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0].map(String);
+  HEADERS.filter((h) => head.indexOf(h) < 0).forEach((h) => {
+    const col = sh.getLastColumn() + 1;
+    sh.getRange(1, col, sh.getMaxRows(), 1).setNumberFormat("@");
+    sh.getRange(1, col).setValue(h);
+  });
   return sh;
+}
+
+// Two bookings clash if they are on the same day with the same barber and their times overlap
+function overlaps_(a, b) {
+  if (a.date !== b.date || a.barber !== b.barber) return false;
+  const aStart = mins_(a.time), aEnd = aStart + minutesOf_(a.minutes);
+  const bStart = mins_(b.time), bEnd = bStart + minutesOf_(b.minutes);
+  return aStart < bEnd && bStart < aEnd;
+}
+
+// A booking's length in minutes (old bookings have none saved)
+function minutesOf_(v) {
+  const n = Math.round(Number(v));
+  return n >= 15 && n <= 240 ? n : DEFAULT_MINUTES;
+}
+
+function mins_(t) { return Number(String(t).slice(0, 2)) * 60 + Number(String(t).slice(3, 5)); }
+
+function prettyRange_(t, minutes) {
+  const end = mins_(t) + minutes;
+  const hhmm = ("0" + Math.floor(end / 60)).slice(-2) + ":" + ("0" + (end % 60)).slice(-2);
+  return pretty12h_(t) + " - " + pretty12h_(hhmm);
 }
 
 function rows_() {

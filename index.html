@@ -135,6 +135,7 @@ p { margin: 0; }
 .service { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--line); min-width: 0; }
 .service:last-child { border-bottom: 0; }
 .service__name { font-size: 1.05rem; }
+.service__mins { display: block; color: var(--grey); font-size: 0.85rem; margin-top: 0.15rem; }
 .service__price { font-family: var(--display); font-size: 1.9rem; line-height: 1; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .notice { margin-top: 2rem; border: 1px solid var(--line); padding: 1.5rem; }
 .notice h3 { font-size: 1.5rem; letter-spacing: 0.1em; margin-bottom: 0.75rem; }
@@ -482,25 +483,30 @@ const BARBERS = ["Brian", "Reezy"];
 // Empty = bookings are sent by WhatsApp only, with no portal or reminders.
 // The Claude demo page cannot reach Google, so it stays on the WhatsApp-only flow.
 const BACKEND_URL = window.claude ? "" : "https://script.google.com/macros/s/AKfycbzcOgP2GrweLuP1FigC4o43Knu_ZRdmL_4yKzIONT617YdVdZlv6OtuzDCqZVZgeNah/exec";
-// Prices from the shop's price list (effective 20 October)
+// Prices from the shop's price list (effective 20 October).
+// minutes = how long the service takes; a booking blocks the barber for that long.
 const SERVICES = [
-  { group: "Gents", name: "Fade", price: 5 },
-  { group: "Gents", name: "Fade + Dye", price: 8 },
-  { group: "Gents", name: "Fade + Dye + Shampoo & Enhancements", price: 10 },
-  { group: "Gents", name: "Line Up", price: 2 },
-  { group: "Ladies", name: "Ladies", price: 5 },
-  { group: "Ladies", name: "Ladies Cut + Dye / Tint / Bleach", price: 10 },
-  { group: "Ladies", name: "Ladies + Curls + Tint", price: 15 },
+  { group: "Gents", name: "Fade", price: 5, minutes: 45 },
+  { group: "Gents", name: "Fade + Dye", price: 8, minutes: 60 },
+  { group: "Gents", name: "Fade + Dye + Shampoo & Enhancements", price: 10, minutes: 60 },
+  { group: "Gents", name: "Line Up", price: 2, minutes: 30 },
+  { group: "Ladies", name: "Ladies", price: 5, minutes: 45 },
+  { group: "Ladies", name: "Ladies Cut + Dye / Tint / Bleach", price: 10, minutes: 60 },
+  { group: "Ladies", name: "Ladies + Curls + Tint", price: 15, minutes: 60 },
 ];
 const CURRENCY = "$";
-// Open every day 6:30am – 10:30pm. Last booking slot starts at 10:00pm so it ends by closing.
+// Open every day 6:30am – 10:30pm. A booking must finish by closing time.
 const OPEN = { open: "06:30", close: "22:30", label: "6:30 AM – 10:30 PM" };
 const HOURS = { 0: OPEN, 1: OPEN, 2: OPEN, 3: OPEN, 4: OPEN, 5: OPEN, 6: OPEN };
-const SLOT_MINUTES = 30;
+// Start times are offered every 15 minutes, so a 45-minute cut leaves no gap before the next client
+const START_STEP = 15;
+// Length assumed for bookings saved before services had their own length
+const DEFAULT_MINUTES = 30;
 const DAYS_AHEAD = 14;
 // ==== End of settings ====
 
 const $ = (id) => document.getElementById(id);
+const serviceLabel = (s) => (s.price == null ? s.name : `${s.name} (${formatPrice(s.price)})`);
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const formatPrice = (p) => (p == null ? "TBA" : CURRENCY + p);
 const pad = (n) => String(n).padStart(2, "0");
@@ -509,29 +515,45 @@ const toMinutes = (t) => { const [h, m] = t.split(":").map(Number); return h * 6
 const toHHMM = (m) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
 const to12h = (t) => { const [h, m] = t.split(":").map(Number); return `${(h % 12) || 12}:${pad(m)} ${h < 12 ? "AM" : "PM"}`; };
 const slotKey = (date, time, barber) => `${date}_${time.replace(":", "")}_${barber}`;
+const fmtMins = (m) => (m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)} hr ${m % 60} min` : `${m / 60} hr`);
 const longDate = (iso) => new Date(iso + "T00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 const state = { service: "", barber: "", date: "", time: "" };
-const booked = new Map();          // slotKey -> booking (date, time, barber, service)
-const isTaken = (date, time) => !!state.barber && booked.has(slotKey(date, time, state.barber));
+const booked = new Map();          // slotKey -> booking (date, time, barber, service, minutes)
+
+// How long the chosen service takes (the dropdown value is the service label)
+const serviceMinutes = (label) => (SERVICES.find((s) => serviceLabel(s) === label) || {}).minutes || DEFAULT_MINUTES;
+const endTime = (time, minutes) => toHHMM(toMinutes(time) + minutes);
+const timeRange = (time, minutes) => `${to12h(time)} – ${to12h(endTime(time, minutes))}`;
+
+// True if the chosen barber already has a booking that overlaps this start time and length
+function isTaken(date, time, minutes = serviceMinutes(state.service)) {
+  if (!state.barber) return false;
+  const start = toMinutes(time), end = start + minutes;
+  for (const b of booked.values()) {
+    if (b.date !== date || b.barber !== state.barber) continue;
+    const bStart = toMinutes(b.time), bEnd = bStart + (Number(b.minutes) || DEFAULT_MINUTES);
+    if (start < bEnd && bStart < end) return true;
+  }
+  return false;
+}
 let store = null;                  // db collection, when the viewer has it
 let canWrite = false;
 
 // Price list + service dropdown, grouped (Gents, Ladies)
-const serviceLabel = (s) => (s.price == null ? s.name : `${s.name} (${formatPrice(s.price)})`);
 [...new Set(SERVICES.map((s) => s.group))].forEach((group) => {
   const items = SERVICES.filter((s) => s.group === group);
   const box = document.createElement("div");
   box.className = "price-group";
   box.innerHTML = `<h3 class="price-group__title">${esc(group)}</h3><ul class="services">${items
-    .map((s) => `<li class="service"><span class="service__name">${esc(s.name)}</span><span class="service__price">${formatPrice(s.price)}</span></li>`)
+    .map((s) => `<li class="service"><span class="service__name">${esc(s.name)}<span class="service__mins">${fmtMins(s.minutes)}</span></span><span class="service__price">${formatPrice(s.price)}</span></li>`)
     .join("")}</ul>`;
   $("services-list").appendChild(box);
 
   const og = document.createElement("optgroup");
   og.label = group;
-  items.forEach((s) => og.appendChild(new Option(serviceLabel(s), serviceLabel(s))));
+  items.forEach((s) => og.appendChild(new Option(`${serviceLabel(s)} · ${fmtMins(s.minutes)}`, serviceLabel(s))));
   $("service").appendChild(og);
 });
 
@@ -543,14 +565,15 @@ const serviceLabel = (s) => (s.price == null ? s.name : `${s.name} (${formatPric
   $("hours-list").appendChild(li);
 });
 
-function slotsFor(date) {
+// Start times on a day that leave room for a booking of this length before closing
+function slotsFor(date, minutes = serviceMinutes(state.service)) {
   const h = HOURS[new Date(date + "T00:00").getDay()];
   if (!h) return [];
   const now = new Date();
   const isToday = date === isoDate(now);
   const nowMins = now.getHours() * 60 + now.getMinutes();
   const out = [];
-  for (let m = toMinutes(h.open); m + SLOT_MINUTES <= toMinutes(h.close); m += SLOT_MINUTES) {
+  for (let m = toMinutes(h.open); m + minutes <= toMinutes(h.close); m += START_STEP) {
     if (!isToday || m > nowMins) out.push(toHHMM(m));
   }
   return out;
@@ -603,18 +626,21 @@ $("barbers").addEventListener("click", (e) => {
   loadBackendSlots(state.date);
 });
 
-// Time dropdown: 30-minute steps from opening. Only the chosen barber's free times are listed.
+// Time dropdown: 15-minute steps from opening. Only times where the chosen barber is free
+// for the whole length of the chosen service are listed, shown as start – finish.
 function renderSlots() {
   const sel = $("time");
   sel.innerHTML = "";
   const first = new Option("", "");
   sel.add(first);
+  if (!state.service) { first.text = "Pick a service first"; state.time = ""; return; }
   if (!state.date) { first.text = "Pick a day first"; return; }
   if (!state.barber) { first.text = "Pick a barber first"; state.time = ""; return; }
   const free = slotsFor(state.date).filter((t) => !isTaken(state.date, t));
   if (!free.length) { first.text = `${state.barber} is fully booked on this day`; state.time = ""; return; }
   first.text = "Choose a time";
-  free.forEach((t) => sel.add(new Option(to12h(t), t)));
+  const mins = serviceMinutes(state.service);
+  free.forEach((t) => sel.add(new Option(timeRange(t, mins), t)));
   if (state.time && !free.includes(state.time)) state.time = "";
   sel.value = state.time;
 }
@@ -637,7 +663,7 @@ $("time").addEventListener("change", () => { state.time = $("time").value; updat
 
 // Form fields
 const field = (id) => $(id).value.trim();
-$("service").addEventListener("change", () => { state.service = $("service").value; update(); });
+$("service").addEventListener("change", () => { state.service = $("service").value; renderSlots(); update(); });
 ["name", "phone", "notes"].forEach((id) => $(id).addEventListener("input", update));
 
 function missing() {
@@ -660,7 +686,7 @@ function waLink() {
     `Service: ${state.service}`,
     `Barber: ${state.barber}`,
     `Date: ${longDate(state.date)}`,
-    `Time: ${to12h(state.time)}`,
+    `Time: ${timeRange(state.time, serviceMinutes(state.service))}`,
   ];
   if (field("notes")) lines.push(`Notes: ${field("notes")}`);
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
@@ -670,7 +696,7 @@ const SEND_LABEL = BACKEND_URL ? "Confirm booking" : "Send booking on WhatsApp";
 $("send").textContent = SEND_LABEL;
 
 function update() {
-  const parts = [state.service, state.barber && `with ${state.barber}`, state.date && longDate(state.date), state.time && to12h(state.time)].filter(Boolean);
+  const parts = [state.service, state.barber && `with ${state.barber}`, state.date && longDate(state.date), state.time && timeRange(state.time, serviceMinutes(state.service))].filter(Boolean);
   $("summary").textContent = parts.length ? parts.join(" · ") : "Choose a service, barber, day and time";
   const ready = missing().length === 0;
   const send = $("send");
@@ -707,7 +733,7 @@ function showDone(mode) {
   $("done-text").textContent = text;
   const rows = [
     ["Service", state.service], ["Barber", state.barber],
-    ["Date", longDate(state.date)], ["Time", to12h(state.time)], ["Where", ADDRESS],
+    ["Date", longDate(state.date)], ["Time", timeRange(state.time, serviceMinutes(state.service))], ["Where", ADDRESS],
   ];
   $("done-details").innerHTML = rows.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}${k === "Where"
     ? ` · <a href="${esc(directionsUrl())}" target="_blank" rel="noopener">Get directions</a>` : ""}</dd>`).join("");
@@ -730,7 +756,7 @@ function calendarLink(mode) {
   if (mode !== "saved" || window.claude) return "";
   const [y, mo, d] = state.date.split("-");
   const [h, mi] = state.time.split(":").map(Number);
-  const end = h * 60 + mi + SLOT_MINUTES;
+  const end = h * 60 + mi + serviceMinutes(state.service);
   const stamp = (hh, mm) => `${y}${mo}${d}T${pad(hh)}${pad(mm)}00`;
   const ics = [
     "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Reezy Fxdes//Booking//EN", "BEGIN:VEVENT",
@@ -762,6 +788,7 @@ $("send").addEventListener("click", async (e) => {
   }
   const booking = {
     date: state.date, time: state.time, barber: state.barber, service: state.service,
+    minutes: serviceMinutes(state.service),
     name: field("name"), phone: field("phone"), notes: field("notes"),
   };
   rememberClient(booking);
@@ -809,7 +836,7 @@ $("done-new").addEventListener("click", () => {
 function saveBooking(b) {
   if (!store || !canWrite) return;
   const key = slotKey(b.date, b.time, b.barber);
-  const slot = { date: b.date, time: b.time, barber: b.barber, service: b.service };
+  const slot = { date: b.date, time: b.time, barber: b.barber, service: b.service, minutes: b.minutes };
   booked.set(key, slot);
   store.doc(key).set({ ...slot, createdAt: new Date().toISOString() }).catch(() => { canWrite = false; });
 }
@@ -918,7 +945,7 @@ if (window.claude) $("portal-link").hidden = true;
     list.innerHTML = rows.length ? "" : '<li class="muted">No bookings yet.</li>';
     rows.forEach(([key, b]) => {
       const li = document.createElement("li");
-      li.innerHTML = `<span>${esc(longDate(b.date))} · ${esc(to12h(b.time))} · ${esc(b.barber || "")} · ${esc(b.service || "")}</span>`;
+      li.innerHTML = `<span>${esc(longDate(b.date))} · ${esc(timeRange(b.time, Number(b.minutes) || DEFAULT_MINUTES))} · ${esc(b.barber || "")} · ${esc(b.service || "")}</span>`;
       const btn = document.createElement("button");
       btn.type = "button";
       btn.textContent = "Free up";
