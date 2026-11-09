@@ -8,6 +8,8 @@
  * - Gives the barbers' portal the list of bookings and report data (protected by a PIN)
  * - Stores the website's price list, gallery photos and opening hours, edited from the
  *   portal's Settings (saved in a "Site" tab; photos go to a public Google Drive folder)
+ * - Gives the portal the clients not yet saved to the phone's contacts, and remembers
+ *   which numbers have been saved (in a "Contacts" tab) so they are never offered twice
  *
  * Setup steps are in backend/SETUP.md.
  * Settings (PIN, phones, emails) live in the separate "Settings" file (backend/Settings.gs).
@@ -35,6 +37,10 @@ function doGet(e) {
       if (p.pin !== PORTAL_PIN) return json_({ ok: false, error: "pin" });
       return json_({ ok: true, rows: reportRows_(p.from, p.to) });
     }
+    if (p.action === "contacts") {
+      if (p.pin !== PORTAL_PIN) return json_({ ok: false, error: "pin" });
+      return json_(newContacts_());
+    }
     return json_({ ok: true, service: "Reezy Fxdes bookings" });
   } catch (err) {
     return json_({ ok: false, error: "server", message: String(err) });
@@ -54,6 +60,10 @@ function doPost(e) {
       if (body.action === "saveConfig") return json_(saveConfig_(body.config));
       if (body.action === "upload") return json_(uploadPhoto_(body));
       return json_(deletePhoto_(body.id));
+    }
+    if (body.action === "contactsSaved") {
+      if (body.pin !== PORTAL_PIN) return json_({ ok: false, error: "pin" });
+      return json_(markContactsSaved_(body.phones));
     }
     return json_({ ok: false, error: "unknown_action" });
   } catch (err) {
@@ -345,6 +355,78 @@ function setup() {
   ScriptApp.newTrigger("sendReminders").timeBased().everyMinutes(5).create();
   // Also checks that WhatsApp / email alerts work
   notify_("*Reezy Fxdes bookings are connected*\nYou'll get booking alerts and reminders here.");
+}
+
+// ---------- Contacts saved to the phone ----------
+
+const CONTACTS_SHEET = "Contacts";
+
+function contactsSheet_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(CONTACTS_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(CONTACTS_SHEET);
+    sh.getRange("A:C").setNumberFormat("@");
+    sh.appendRow(["phone", "name", "savedAt"]);
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+// One way of writing each number, so 0771 234 567 and +263 77 123 4567 count as the same client
+function phoneKey_(p) {
+  let d = str_(p).replace(/\D/g, "");
+  if (d.indexOf("00") === 0) d = d.slice(2);
+  if (d.indexOf("0") === 0) d = "263" + d.slice(1);
+  else if (d.length === 9 && d.charAt(0) === "7") d = "263" + d;   // 77 123 4567 typed without the 0
+  return d;
+}
+
+function savedPhones_() {
+  const set = {};
+  contactsSheet_().getDataRange().getValues().slice(1).forEach((r) => { if (r[0]) set[phoneKey_(r[0])] = true; });
+  return set;
+}
+
+// Everyone who has ever booked and isn't in the phone's contacts yet, newest name for each number
+function newContacts_() {
+  const saved = savedPhones_();
+  const byPhone = {};
+  rows_().forEach((r) => {
+    const key = phoneKey_(r.phone);
+    if (key.length < 9 || saved[key] || !str_(r.name)) return;
+    const when = str_(r.createdAt);
+    if (!byPhone[key] || when >= byPhone[key].when) byPhone[key] = { phone: "+" + key, name: text_(r.name, 80), when: when };
+  });
+  const contacts = Object.keys(byPhone).map((k) => ({ phone: byPhone[k].phone, name: byPhone[k].name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  return { ok: true, contacts: contacts, savedCount: Object.keys(saved).length };
+}
+
+function markContactsSaved_(phones) {
+  if (!Array.isArray(phones) || !phones.length) return { ok: false, error: "invalid", message: "No contacts to mark." };
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const saved = savedPhones_();
+    const names = {};
+    rows_().forEach((r) => { names[phoneKey_(r.phone)] = text_(r.name, 80); });
+    const now = Utilities.formatDate(new Date(), TZ, "yyyy-MM-dd HH:mm");
+    const add = [];
+    phones.slice(0, 5000).forEach((p) => {
+      const key = phoneKey_(p);
+      if (key.length < 9 || saved[key]) return;
+      saved[key] = true;
+      add.push(["+" + key, names[key] || "", now]);
+    });
+    if (add.length) {
+      const sh = contactsSheet_();
+      sh.getRange(sh.getLastRow() + 1, 1, add.length, 3).setValues(add);
+    }
+    return { ok: true, added: add.length };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // ---------- Helpers ----------

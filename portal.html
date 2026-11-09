@@ -166,6 +166,12 @@ body.has-tabbar { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
 .row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.6rem; }
 .check { display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; cursor: pointer; }
 .check input { width: 20px; height: 20px; accent-color: var(--white); }
+.contacts-count { font-family: var(--display, inherit); font-size: 1.4rem; font-weight: 600; }
+.clist { list-style: none; display: grid; border: 1px solid var(--line); }
+.clist:empty { display: none; }
+.clist li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.7rem 0.9rem; font-size: 0.9rem; }
+.clist li + li { border-top: 1px solid var(--line); }
+.clist li span:last-child { color: var(--grey); white-space: nowrap; }
 .minis { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 .minis button {
   min-height: 38px; padding: 0 0.75rem; border: 1px solid var(--line); background: transparent; color: var(--white);
@@ -318,6 +324,21 @@ body.has-tabbar { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
         <button type="button" class="btn" id="svc-save">Save price list</button>
         <p class="msg" id="svc-msg" role="status"></p>
       </div>
+    </div>
+
+    <div class="panel" id="panel-contacts" hidden>
+      <p class="hint">Saves every client who has booked (their booking name and number) into this phone's contacts in one go. Numbers already saved are never offered again, so only new clients come through each time.</p>
+      <div class="card contacts-box">
+        <p class="contacts-count" id="contacts-count">Checking…</p>
+        <p class="hint" id="contacts-sub"></p>
+      </div>
+      <button type="button" class="btn btn--block" id="contacts-get" disabled>Save new contacts to phone</button>
+      <div class="panel" id="contacts-confirm" hidden>
+        <p class="hint">Your phone should now offer to add them (open the downloaded file if it doesn't). Once they're in your contacts, tap below so they aren't offered again.</p>
+        <button type="button" class="btn btn--ghost btn--block" id="contacts-done">They're saved. Don't offer them again</button>
+      </div>
+      <p class="msg" id="contacts-msg" role="status"></p>
+      <ul class="clist" id="contacts-list"></ul>
     </div>
 
     <div class="panel" id="panel-hours" hidden>
@@ -749,14 +770,16 @@ async function api(body) {
 }
 
 function renderSettingsTabs() {
-  chips($("settings-tabs"), [["gallery", "Gallery"], ["prices", "Price list"], ["hours", "Hours"]], settingsTab, (v) => { settingsTab = v; renderSettingsTabs(); });
+  chips($("settings-tabs"), [["gallery", "Gallery"], ["prices", "Prices"], ["hours", "Hours"], ["contacts", "Contacts"]], settingsTab, (v) => { settingsTab = v; renderSettingsTabs(); if (v === "contacts") loadContacts(); });
   $("panel-gallery").hidden = settingsTab !== "gallery";
+  $("panel-contacts").hidden = settingsTab !== "contacts";
   $("panel-prices").hidden = settingsTab !== "prices";
   $("panel-hours").hidden = settingsTab !== "hours";
 }
 
 async function loadSettings() {
   renderSettingsTabs();
+  if (settingsTab === "contacts") loadContacts();
   $("settings-updated").textContent = "Loading…";
   try {
     const res = await (await fetch(`${BACKEND_URL}?action=config&t=${Date.now()}`)).json();
@@ -1007,6 +1030,84 @@ $("logout").addEventListener("click", () => {
 });
 
 let soonTimer = null;
+// ---------- Contacts: save clients who have booked into the phone's contacts ----------
+let newContacts = [];   // [{name, phone}] not yet saved to the phone
+let pendingSave = [];   // the ones in the last file made, waiting for "They're saved"
+
+async function loadContacts() {
+  $("contacts-get").disabled = true;
+  $("contacts-confirm").hidden = !pendingSave.length;
+  $("contacts-count").textContent = "Checking…";
+  $("contacts-sub").textContent = "";
+  try {
+    const res = await (await fetch(`${BACKEND_URL}?action=contacts&pin=${encodeURIComponent(pin)}&t=${Date.now()}`)).json();
+    if (!res.ok) {
+      if (res.error === "pin") { pin = ""; store.del("reezy:pin"); show("login"); $("login-error").textContent = "That PIN isn't right."; return; }
+      $("contacts-count").textContent = "Not available yet";
+      setMsg("contacts-msg", "This needs the latest booking system code. Update and redeploy the Apps Script.", "bad");
+      return;
+    }
+    newContacts = res.contacts || [];
+    const n = newContacts.length;
+    $("contacts-count").textContent = n ? `${n} new contact${n === 1 ? "" : "s"}` : "No new contacts";
+    $("contacts-sub").textContent = `${res.savedCount || 0} already saved before.`;
+    $("contacts-get").textContent = n ? `Save ${n} new contact${n === 1 ? "" : "s"} to phone` : "Save new contacts to phone";
+    $("contacts-get").disabled = !n;
+    $("contacts-list").innerHTML = newContacts.map((c) => `<li><span>${esc(c.name)}</span><span>${esc(c.phone)}</span></li>`).join("");
+  } catch {
+    $("contacts-count").textContent = "Couldn't reach the booking system.";
+  }
+}
+
+// vCard text: one card per client, the format phones import as contacts
+const vcfText = (s) => String(s).replace(/\\/g, "\\\\").replace(/\s+/g, " ").replace(/([,;])/g, "\\$1");
+function makeVcf(list) {
+  return list.map((c) => [
+    "BEGIN:VCARD", "VERSION:3.0",
+    `FN:${vcfText(c.name)}`, `N:;${vcfText(c.name)};;;`,
+    `TEL;TYPE=CELL:${c.phone}`,
+    "NOTE:Reezy Fxdes client", "END:VCARD",
+  ].join("\r\n")).join("\r\n") + "\r\n";
+}
+
+$("contacts-get").addEventListener("click", async () => {
+  if (!newContacts.length) return;
+  pendingSave = newContacts.slice();
+  const name = `reezy-clients-${isoDate(new Date())}.vcf`;
+  const file = new File([makeVcf(pendingSave)], name, { type: "text/vcard" });
+  setMsg("contacts-msg", "");
+  let shared = false;
+  // On phones the share sheet can hand the file straight to Contacts; otherwise download it
+  if (navigator.canShare && navigator.canShare({ files: [file] }) && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
+    try { await navigator.share({ files: [file], title: "Reezy Fxdes clients" }); shared = true; }
+    catch (e) { if (e && e.name === "AbortError") { pendingSave = []; return; } }
+  }
+  if (!shared) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(file);
+    a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+  }
+  $("contacts-confirm").hidden = false;
+});
+
+$("contacts-done").addEventListener("click", async () => {
+  if (!pendingSave.length) return;
+  $("contacts-done").disabled = true;
+  try {
+    const res = await api({ action: "contactsSaved", phones: pendingSave.map((c) => c.phone) });
+    if (res.ok) {
+      setMsg("contacts-msg", `Done. ${pendingSave.length} contact${pendingSave.length === 1 ? "" : "s"} won't be offered again.`, "ok");
+      pendingSave = [];
+      await loadContacts();
+    } else if (res.error !== "pin") setMsg("contacts-msg", res.message || "Couldn't save that. Try again.", "bad");
+  } catch {
+    setMsg("contacts-msg", "Couldn't reach the booking system. Try again.", "bad");
+  }
+  $("contacts-done").disabled = false;
+});
+
 function start() {
   show("app");
   clearInterval(timer); clearInterval(soonTimer);
