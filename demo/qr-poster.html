@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reezy Fxdes QR poster</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=block" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+  /* A4 portrait at 1240 x 1754 CSS px (renders at 2x = 300 dpi) */
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1240px; height: 1754px; }
+  body {
+    background: #0a0a0a; color: #fff; font-family: "Inter", sans-serif;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .poster { position: relative; width: 1240px; height: 1754px; padding: 90px 100px 80px; display: flex; flex-direction: column; overflow: hidden; }
+  .poster::before { content: ""; position: absolute; inset: 36px; border: 3px solid #fff; pointer-events: none; }
+
+  .logo {
+    position: absolute; top: 70px; left: 70px; width: 250px; height: 250px; border-radius: 50%;
+    background: #fff; border: 6px solid #fff; outline: 3px solid #0a0a0a; overflow: hidden;
+  }
+  .logo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; transform: scale(1.12); }
+
+  .head { margin-left: 300px; min-height: 250px; display: flex; flex-direction: column; justify-content: center; }
+  .name { font-family: "Bebas Neue", sans-serif; font-size: 120px; line-height: 0.9; letter-spacing: 3px; }
+  .sub { font-family: "Bebas Neue", sans-serif; font-size: 50px; letter-spacing: 4px; color: #9a9a9a; margin-top: 10px; }
+
+  .cta { text-align: center; margin-top: 70px; }
+  .cta h1 { font-family: "Bebas Neue", sans-serif; font-weight: 400; font-size: 190px; line-height: 0.9; letter-spacing: 6px; }
+  .cta p { font-size: 34px; color: #cfcfcf; margin-top: 14px; }
+
+  .qr { align-self: center; margin-top: 50px; background: #fff; padding: 40px; width: 660px; height: 660px; }
+  .qr svg { width: 100%; height: 100%; display: block; }
+
+  .hint { text-align: center; font-size: 28px; color: #9a9a9a; margin-top: 26px; letter-spacing: 1px; }
+
+  .url { text-align: center; font-size: 34px; color: #cfcfcf; margin-top: 14px; letter-spacing: 1px; }
+  .url strong { color: #fff; font-weight: 600; }
+
+  .info { margin-top: auto; display: grid; grid-template-columns: repeat(3, 1fr); border-top: 3px solid #fff; padding-top: 34px; gap: 30px; }
+  .info div { display: grid; gap: 6px; }
+  .info .k { font-size: 20px; font-weight: 600; letter-spacing: 4px; text-transform: uppercase; color: #9a9a9a; }
+  .info .v { font-family: "Bebas Neue", sans-serif; font-size: 44px; letter-spacing: 1.5px; line-height: 1.05; }
+  /* A4 prints at 794 x 1123 px, so shrink the 1240 x 1754 poster to fit one sheet */
+  @media print { html, body { width: 794px; height: 1123px; overflow: hidden; } .poster { zoom: 0.6403; } }
+</style>
+</head>
+<body>
+  <div class="poster">
+    <div class="logo"><img src="file:///C:/Users/farai/Reezy_fxdes/assets/logo.jpeg" alt=""></div>
+    <div class="head">
+      <div class="name">Reezy Fxdes</div>
+      <div class="sub">/ VIP Classic Barbershop</div>
+    </div>
+
+    <div class="cta">
+      <h1>Scan to book</h1>
+      <p>Pick your barber and time. Booked clients are served first.</p>
+    </div>
+
+    <div class="qr" id="qr"></div>
+    <p class="hint">Point your phone camera at the code · Save the page for next time</p>
+    <p class="url">or visit <strong>reezyfxdes.co.zw</strong></p>
+
+    <div class="info">
+      <div><span class="k">Open daily</span><span class="v">6:30 AM – 10:30 PM</span></div>
+      <div><span class="k">Contact</span><span class="v">071 951 5630<br>078 280 7245</span></div>
+      <div><span class="k">Find us</span><span class="v">Senga,<br>KMP Bluetuckshops</span></div>
+    </div>
+  </div>
+<script>
+  const qr = qrcode(0, "Q");                     // Q = survives scratches and smudges on a printed sticker
+  // http on purpose: works before the https certificate is ready, and GitHub forwards it to https afterwards
+  qr.addData("http://reezyfxdes.co.zw/#book");
+  qr.make();
+  document.getElementById("qr").innerHTML = qr.createSvgTag({ cellSize: 10, margin: 0, scalable: true });
+</script>
+</body>
+</html>
