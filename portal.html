@@ -191,6 +191,12 @@ body.has-tabbar { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
 .ptile .inp { min-height: 40px; font-size: 14px; margin: 0 0.5rem; width: calc(100% - 1rem); }
 .ptile .minis { padding: 0 0.5rem; }
 .ptile .minis button { flex: 1; padding: 0 0.3rem; }
+.ptile .share-btn {
+  margin: 0 0.5rem; min-height: 40px; display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+  background: var(--white); color: var(--black); border: 1px solid var(--white); cursor: pointer;
+  font: 600 0.7rem var(--body); text-transform: uppercase; letter-spacing: 0.08em;
+}
+.ptile .share-btn:disabled { opacity: 0.5; cursor: default; }
 .upload { position: relative; }
 .upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
 
@@ -307,7 +313,7 @@ body.has-tabbar { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
     <div class="seg" id="settings-tabs" role="group" aria-label="Settings section"></div>
 
     <div class="panel" id="panel-gallery">
-      <p class="hint">These photos show in the "Fresh from the chair" gallery on the website, in this order. Changes save straight away.</p>
+      <p class="hint">These photos show in the "Fresh from the chair" gallery on the website, in this order. Changes save straight away. Tap Share on a photo to send it (WhatsApp, Facebook, Status…) with "Make your bookings today!" and the booking link.</p>
       <label class="btn upload" id="photo-add">
         + Add photos
         <input type="file" id="photo-input" accept="image/*" multiple aria-label="Add photos">
@@ -806,7 +812,57 @@ function renderPhotos() {
         <button type="button" data-move="1" ${i === photos.length - 1 ? "disabled" : ""} aria-label="Move photo ${i + 1} later">›</button>
         <button type="button" data-remove aria-label="Remove photo ${i + 1}">Remove</button>
       </div>
+      <button type="button" class="share-btn" data-share aria-label="Share photo ${i + 1}">${ICON_SHARE} Share</button>
     </li>`).join("") : `<li class="empty" style="grid-column:1/-1">No photos yet. Add some so clients can see your work.</li>`;
+}
+
+// ---------- Share a gallery photo, with a line inviting people to book ----------
+const ICON_SHARE = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>`;
+const BOOK_URL = SITE_URL + "#book";
+const SHARE_TEXT = `Make your bookings today!
+${BOOK_URL}`;
+
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch { return false; }
+}
+
+async function sharePhoto(photo, btn) {
+  btn.disabled = true;
+  setMsg("gallery-msg", "Getting the photo ready…");
+  try {
+    const url = new URL(photo.src, SITE_URL).href;
+    let file = null;
+    try {
+      const blob = await (await fetch(url)).blob();
+      file = new File([blob], "reezy-fxdes-cut.jpg", { type: blob.type || "image/jpeg" });
+    } catch { /* share without the picture */ }
+
+    // Some apps drop the words when a picture is shared, so keep them on the clipboard to paste
+    const copied = await copyText(SHARE_TEXT);
+    const pasteTip = copied ? " If the words didn't come through, paste them: they're copied." : "";
+
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], text: SHARE_TEXT, title: "Reezy Fxdes" });
+      setMsg("gallery-msg", "Shared." + pasteTip, "ok");
+    } else if (navigator.share) {
+      await navigator.share({ text: SHARE_TEXT, url: BOOK_URL, title: "Reezy Fxdes" });
+      setMsg("gallery-msg", "Shared the booking link. This browser can't share the picture itself.", "ok");
+    } else {
+      // Computer: save the picture, and the words are on the clipboard
+      if (file) {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(file); a.download = file.name;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+      }
+      setMsg("gallery-msg", (file ? "Photo saved. " : "") + (copied ? "The booking words and link are copied: paste them with the photo." : SHARE_TEXT), "ok");
+    }
+  } catch (e) {
+    if (e && e.name === "AbortError") setMsg("gallery-msg", "");
+    else setMsg("gallery-msg", "Couldn't share that photo. Try again.", "bad");
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function saveGallery(okText) {
@@ -824,6 +880,7 @@ $("photo-list").addEventListener("click", async (e) => {
   const btn = e.target.closest("button");
   if (!tile || !btn) return;
   const i = Number(tile.dataset.i);
+  if (btn.hasAttribute("data-share")) { sharePhoto(photos[i], btn); return; }
   if (btn.dataset.move) {
     const j = i + Number(btn.dataset.move);
     [photos[i], photos[j]] = [photos[j], photos[i]];
